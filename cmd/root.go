@@ -156,7 +156,7 @@ func getFilesList(recordJSON map[string]interface{}, expand bool) ([]string, err
 				defer resp.Body.Close()
 
 				scanner := bufio.NewScanner(resp.Body)
-				for i := 0; scanner.Scan() && i < 5; i++ {
+				for i := 0; scanner.Scan(); i++ {
 					filesSliceExpanded = append(filesSliceExpanded, scanner.Text())
 				}
 			} else if strings.HasSuffix(filesSlice[idx], "_file_index.json") {
