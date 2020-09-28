@@ -18,6 +18,7 @@ var (
 	// Used for flags.
 	recordID string
 	server   string
+	noExpand bool
 
 	rootCmd = &cobra.Command{
 		Use:   "cernopendata-client-go",
@@ -36,6 +37,7 @@ func Execute() error {
 func init() {
 
 	rootCmd.PersistentFlags().StringVarP(&recordID, "record", "r", "", "record ID to list (required)")
+	rootCmd.PersistentFlags().BoolVar(&noExpand, "no-expand", false, "expand files indices")
 	rootCmd.MarkFlagRequired("record")
 	rootCmd.PersistentFlags().StringVarP(&server, "server", "s", "http://opendata.cern.ch", "CERN Open Data server to query")
 	err := doc.GenMarkdownTree(rootCmd, "docs")
@@ -122,7 +124,7 @@ func getRecordJSON() (map[string]interface{}, error) {
 
 }
 
-func getFilesList(recordJSON map[string]interface{}, expand bool) ([]string, error) {
+func getFilesList(recordJSON map[string]interface{}) ([]string, error) {
 
 	_, hasMetadata := recordJSON["metadata"]
 	filesSlice := make([]string, 0)
@@ -141,7 +143,7 @@ func getFilesList(recordJSON map[string]interface{}, expand bool) ([]string, err
 		}
 	}
 
-	if expand {
+	if !noExpand {
 		filesSliceExpanded := make([]string, 0)
 		for idx := range filesSlice {
 			if strings.HasSuffix(filesSlice[idx], "_file_index.txt") {

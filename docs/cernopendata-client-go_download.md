@@ -21,6 +21,7 @@ cernopendata-client-go download [flags]
 ### Options inherited from parent commands
 
 ```
+      --no-expand       expand files indices
   -r, --record string   record ID to list (required)
   -s, --server string   CERN Open Data server to query (default "http://opendata.cern.ch")
 ```

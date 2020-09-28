@@ -12,6 +12,7 @@ files and complete records.
 
 ```
   -h, --help            help for cernopendata-client-go
+      --no-expand       expand files indices
   -r, --record string   record ID to list (required)
   -s, --server string   CERN Open Data server to query (default "http://opendata.cern.ch")
 ```

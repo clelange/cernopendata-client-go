@@ -25,7 +25,7 @@ var (
 			if err != nil {
 				er(err)
 			}
-			filesList, err := getFilesList(recordJSON, true)
+			filesList, err := getFilesList(recordJSON)
 			if err != nil {
 				er(err)
 			}
