@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/cobra/doc"
 )
 
 var (
@@ -37,6 +38,10 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&recordID, "record", "r", "", "record ID to list (required)")
 	rootCmd.MarkFlagRequired("record")
 	rootCmd.PersistentFlags().StringVarP(&server, "server", "s", "http://opendata.cern.ch", "CERN Open Data server to query")
+	err := doc.GenMarkdownTree(rootCmd, "docs")
+	if err != nil {
+		fmt.Errorf("error generating docs", err)
+	}
 
 }
 
