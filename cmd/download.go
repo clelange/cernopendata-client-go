@@ -64,7 +64,6 @@ func downloadFiles(filesList []string) error {
 		if err != nil {
 			return err
 		}
-		break
 	}
 
 	return err
