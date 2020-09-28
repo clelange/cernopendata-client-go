@@ -13,6 +13,10 @@ builds:
       - linux
       - windows
       - darwin
+    # Custom ldflags templates.
+    # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -X main.builtBy=goreleaser`.
+    ldflags:
+      - -s -w -X github.com/clelange/cernopendata-client-go/cmd.version={{.Version}} -X github.com/clelange/cernopendata-client-go/cmd.commit={{.Commit}} -X github.com/clelange/cernopendata-client-go/cmd.date={{.Date}}
 archives:
   - replacements:
       darwin: Darwin
@@ -30,3 +34,7 @@ changelog:
     exclude:
       - '^docs:'
       - '^test:'
+dockers:
+  - image_templates:
+    - ghcr.io/clelange/cernopendata-client-go/cernopendata-client-go
+    - "ghcr.io/clelange/cernopendata-client-go/clelange/cernopendata-client-go:{{ .Tag }}"

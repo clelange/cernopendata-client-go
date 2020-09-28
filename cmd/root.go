@@ -19,9 +19,9 @@ var (
 	server   string
 
 	rootCmd = &cobra.Command{
-		Use:   "cernopendata-client",
+		Use:   "cernopendata-client-go",
 		Short: "A commandline tool to interact with the CERN Open Data portal",
-		Long: `The cernopendata-client is a tool to retrieve information
+		Long: `The cernopendata-client-go is a tool to retrieve information
 from the CERN Open Data portal and to download individual
 files and complete records.`,
 	}
