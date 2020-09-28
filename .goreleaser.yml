@@ -36,5 +36,5 @@ changelog:
       - '^test:'
 dockers:
   - image_templates:
-    - ghcr.io/clelange/cernopendata-client-go/cernopendata-client-go
-    - "ghcr.io/clelange/cernopendata-client-go/clelange/cernopendata-client-go:{{ .Tag }}"
+    - clelange/cernopendata-client-go
+    - "clelange/cernopendata-client-go:{{ .Tag }}"
