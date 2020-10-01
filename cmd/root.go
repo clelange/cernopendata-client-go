@@ -18,6 +18,7 @@ var (
 	// Used for flags.
 	recordID string
 	server   string
+	protocol string
 	noExpand bool
 
 	rootCmd = &cobra.Command{
@@ -50,6 +51,18 @@ func init() {
 func er(msg interface{}) {
 	fmt.Println("Error:", msg)
 	os.Exit(1)
+}
+
+func validateProtocolChoice() error {
+
+	validProtocols := []string{"http", "root"}
+	for i := range validProtocols {
+		if validProtocols[i] == protocol {
+			return nil
+		}
+	}
+	return fmt.Errorf("Invalid protocol option \"%s\", choose either of %s", protocol, strings.Join(validProtocols, ", "))
+
 }
 
 func verifyRecordID() error {
@@ -168,5 +181,14 @@ func getFilesList(recordJSON map[string]interface{}) ([]string, error) {
 		}
 		filesSlice = filesSliceExpanded
 	}
+
+	if protocol == "http" {
+		  filesSliceHttp := make([]string, 0)
+		  for i := range filesSlice {
+			filesSliceHttp = append(filesSliceHttp, strings.Replace(filesSlice[i], "root://eospublic.cern.ch/", server, 1))
+		  }
+		  filesSlice = filesSliceHttp
+	}
+
 	return filesSlice, nil
 }

@@ -8,6 +8,7 @@ import (
 
 func init() {
 	rootCmd.AddCommand(listCmd)
+	listCmd.PersistentFlags().StringVarP(&protocol, "protocol", "p", "http", "Protocol to be used (http or root)")
 }
 
 var (
@@ -17,7 +18,11 @@ var (
 		Long: `This command will print a list of data file locations
 (URIs) associated with the record ID provided.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			err := verifyRecordID()
+			err := validateProtocolChoice()
+			if err != nil {
+				er(err)
+			}
+			err = verifyRecordID()
 			if err != nil {
 				er(err)
 			}

@@ -17,7 +17,8 @@ import (
 
 func init() {
 	rootCmd.AddCommand(downloadCmd)
-	downloadCmd.PersistentFlags().StringVarP(&outdir, "out", "o", "download", "Output directoy")
+	downloadCmd.PersistentFlags().StringVarP(&outdir, "out", "o", "download", "Output directory")
+	downloadCmd.PersistentFlags().StringVarP(&protocol, "protocol", "p", "http", "Protocol to be used (http or root)")
 
 }
 
@@ -30,7 +31,11 @@ var (
 		Long: `This command will download all files associated
 with a record.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			err := verifyRecordID()
+			err := validateProtocolChoice()
+			if err != nil {
+				er(err)
+			}
+			err = verifyRecordID()
 			if err != nil {
 				er(err)
 			}
