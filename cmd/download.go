@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"time"
 	stdpath "path"
 	"path/filepath"
 
@@ -13,17 +14,20 @@ import (
 	"go-hep.org/x/hep/xrootd"
 	"go-hep.org/x/hep/xrootd/xrdfs"
 	"go-hep.org/x/hep/xrootd/xrdio"
+	"github.com/cavaliercoder/grab"
 )
 
 func init() {
 	rootCmd.AddCommand(downloadCmd)
 	downloadCmd.PersistentFlags().StringVarP(&outdir, "out", "o", "download", "Output directory")
 	downloadCmd.PersistentFlags().StringVarP(&protocol, "protocol", "p", "http", "Protocol to be used (http or root)")
+	downloadCmd.PersistentFlags().IntVar(&parallelDownloads, "parallel", 5, "Number of parallel downloads (http only)")
 
 }
 
 var (
 	outdir string
+	parallelDownloads int
 
 	downloadCmd = &cobra.Command{
 		Use:   "download",
@@ -62,16 +66,89 @@ func downloadFiles(filesList []string) error {
 	if err != nil {
 		return err
 	}
-	for i := range filesList {
-		destPath := filepath.Join(recordOutDir, stdpath.Base(filesList[i]))
-		fmt.Println(filesList[i], "-->", destPath)
-		err = xrdcopy(destPath, filesList[i], true)
+
+	if protocol == "root" {
+		for i := range filesList {
+			destPath := filepath.Join(recordOutDir, stdpath.Base(filesList[i]))
+			fmt.Println(filesList[i], "-->", destPath)
+			err = xrdcopy(destPath, filesList[i], true)
+			if err != nil {
+				return err
+			}
+		}
+	} else { // protocol == "http"
+		err = grabFiles(filesList, recordOutDir)
 		if err != nil {
 			return err
 		}
 	}
 
 	return err
+}
+
+func grabFiles(filesList []string, recordOutDir string) error {
+
+	fmt.Printf("Downloading %d files using %d parallel threads...\n", len(filesList), parallelDownloads)
+	respch, err := grab.GetBatch(parallelDownloads, recordOutDir, filesList...)
+	if err != nil {
+		return err
+	}
+
+	// start a ticker to update progress every 1000ms
+	t := time.NewTicker(1000 * time.Millisecond)
+
+	// monitor downloads
+	completed := 0
+	inProgress := 0
+	responses := make([]*grab.Response, 0)
+	for completed < len(filesList) {
+		select {
+		case resp := <-respch:
+			// a new response has been received and has started downloading
+			// (nil is received once, when the channel is closed by grab)
+			if resp != nil {
+				responses = append(responses, resp)
+			}
+
+		case <-t.C:
+			// clear lines
+			if inProgress > 0 {
+				fmt.Printf("\033[%dA\033[K", inProgress)
+			}
+
+			// update completed downloads
+			for i, resp := range responses {
+				if resp != nil && resp.IsComplete() {
+					// print final result
+					if resp.Err() != nil {
+						fmt.Fprintf(os.Stderr, "Error downloading %s: %v\n", resp.Request.URL(), resp.Err())
+					} else {
+						fmt.Printf("Finished %s %d / %d bytes (%d%%)\n", resp.Filename, resp.BytesComplete(), resp.Size, int(100*resp.Progress()))
+					}
+
+					// mark completed
+					responses[i] = nil
+					completed++
+				}
+			}
+
+			// update downloads in progress
+			inProgress = 0
+			for _, resp := range responses {
+				if resp != nil {
+					inProgress++
+					fmt.Printf("Downloading %s %d / %d bytes (%d%%)\033[K\n", resp.Filename, resp.BytesComplete(), resp.Size, int(100*resp.Progress()))
+				}
+			}
+		}
+	}
+
+	t.Stop()
+
+	fmt.Printf("%d files successfully downloaded.\n", len(filesList))
+
+	return nil
+
 }
 
 func xrdcopy(dst, srcPath string, verbose bool) error {

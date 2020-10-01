@@ -16,6 +16,7 @@ cernopendata-client-go download [flags]
 ```
   -h, --help              help for download
   -o, --out string        Output directory (default "download")
+      --parallel int      Number of parallel downloads (http only) (default 5)
   -p, --protocol string   Protocol to be used (http or root) (default "http")
 ```
 
