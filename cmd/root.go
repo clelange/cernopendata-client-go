@@ -41,11 +41,9 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&noExpand, "no-expand", false, "expand files indices")
 	rootCmd.MarkFlagRequired("record")
 	rootCmd.PersistentFlags().StringVarP(&server, "server", "s", "http://opendata.cern.ch", "CERN Open Data server to query")
-	err := doc.GenMarkdownTree(rootCmd, "docs")
-	if err != nil {
-		fmt.Errorf("error generating docs", err)
+	if err := doc.GenMarkdownTree(rootCmd, "docs"); err != nil {
+		panic(fmt.Sprintf("error generating docs: %s", err))
 	}
-
 }
 
 func er(msg interface{}) {
@@ -61,7 +59,7 @@ func validateProtocolChoice() error {
 			return nil
 		}
 	}
-	return fmt.Errorf("Invalid protocol option \"%s\", choose either of %s", protocol, strings.Join(validProtocols, ", "))
+	return fmt.Errorf("invalid protocol option \"%s\", choose either of %s", protocol, strings.Join(validProtocols, ", "))
 
 }
 
@@ -105,7 +103,9 @@ func getRecordJSON() (map[string]interface{}, error) {
 	}
 
 	var apiInterface interface{}
-	err = json.Unmarshal(body, &apiInterface)
+	if err := json.Unmarshal(body, &apiInterface); err != nil {
+		return nil, err
+	}
 
 	apiResponse := apiInterface.(map[string]interface{})
 
@@ -183,11 +183,11 @@ func getFilesList(recordJSON map[string]interface{}) ([]string, error) {
 	}
 
 	if protocol == "http" {
-		  filesSliceHttp := make([]string, 0)
-		  for i := range filesSlice {
+		filesSliceHttp := make([]string, 0)
+		for i := range filesSlice {
 			filesSliceHttp = append(filesSliceHttp, strings.Replace(filesSlice[i], "root://eospublic.cern.ch/", server, 1))
-		  }
-		  filesSlice = filesSliceHttp
+		}
+		filesSlice = filesSliceHttp
 	}
 
 	return filesSlice, nil
