@@ -17,7 +17,6 @@ var (
 	version   = "dev"
 	commit    = "none"
 	date      = "unknown"
-	output    = "json"
 
 	versionCmd = &cobra.Command{
 		Use:   "version",
@@ -28,7 +27,6 @@ var (
 			} else {
 				fmt.Println("cernopendata-client-go", version, "commit", commit, "built at", date)
 			}
-			return
 		},
 	}
 )
