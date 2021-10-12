@@ -6,15 +6,15 @@ import (
 	"io"
 	"log"
 	"os"
-	"time"
 	stdpath "path"
 	"path/filepath"
+	"time"
 
+	"github.com/cavaliercoder/grab"
 	"github.com/spf13/cobra"
 	"go-hep.org/x/hep/xrootd"
 	"go-hep.org/x/hep/xrootd/xrdfs"
 	"go-hep.org/x/hep/xrootd/xrdio"
-	"github.com/cavaliercoder/grab"
 )
 
 func init() {
@@ -26,7 +26,7 @@ func init() {
 }
 
 var (
-	outdir string
+	outdir            string
 	parallelDownloads int
 
 	downloadCmd = &cobra.Command{
@@ -35,12 +35,10 @@ var (
 		Long: `This command will download all files associated
 with a record.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			err := validateProtocolChoice()
-			if err != nil {
+			if err := validateProtocolChoice(); err != nil {
 				er(err)
 			}
-			err = verifyRecordID()
-			if err != nil {
+			if err := verifyUniqueID(); err != nil {
 				er(err)
 			}
 			recordJSON, err := getRecordJSON()

@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
@@ -17,6 +19,7 @@ import (
 var (
 	// Used for flags.
 	recordID string
+	doi      string
 	server   string
 	protocol string
 	noExpand bool
@@ -37,9 +40,9 @@ func Execute() error {
 
 func init() {
 
-	rootCmd.PersistentFlags().StringVarP(&recordID, "record", "r", "", "record ID to list (required)")
+	rootCmd.PersistentFlags().StringVarP(&recordID, "record", "r", "", "record ID to list")
+	rootCmd.PersistentFlags().StringVarP(&doi, "doi", "d", "", "Digital Object Identifier")
 	rootCmd.PersistentFlags().BoolVar(&noExpand, "no-expand", false, "expand files indices")
-	rootCmd.MarkFlagRequired("record")
 	rootCmd.PersistentFlags().StringVarP(&server, "server", "s", "http://opendata.cern.ch", "CERN Open Data server to query")
 	err := doc.GenMarkdownTree(rootCmd, "docs")
 	if err != nil {
@@ -65,20 +68,102 @@ func validateProtocolChoice() error {
 
 }
 
-func verifyRecordID() error {
-	// Verify that record provided exists
+type apiRecords struct {
+	Hits struct {
+		Hits []struct {
+			Created time.Time `json:"created"`
+			ID      int       `json:"id"`
+			Links   struct {
+				Self string `json:"self"`
+			} `json:"links"`
+			Metadata struct {
+				Schema   string `json:"$schema"`
+				Abstract struct {
+					Description string `json:"description"`
+					Links       []struct {
+						Recid string `json:"recid"`
+					} `json:"links"`
+				} `json:"abstract"`
+				ControlNumber   string   `json:"control_number"`
+				DateCreated     []string `json:"date_created"`
+				DatePublished   string   `json:"date_published"`
+				DateReprocessed string   `json:"date_reprocessed"`
+				Doi             string   `json:"doi"`
+				Experiment      string   `json:"experiment"`
+				License         struct {
+					Attribution string `json:"attribution"`
+				} `json:"license"`
+				Methodology struct {
+					Description string `json:"description"`
+				} `json:"methodology"`
+				Publisher string `json:"publisher"`
+				Recid     string `json:"recid"`
+				Title     string `json:"title"`
+			} `json:"metadata"`
+			Updated time.Time `json:"updated"`
+		} `json:"hits"`
+		Total int `json:"total"`
+	} `json:"hits"`
+	Links struct {
+		Self string `json:"self"`
+	} `json:"links"`
+}
 
-	// Check if recordID provided is a positive integer
+func getRecordIDFromDoi() error {
+	params := url.Values{}
+	params.Add("page", "1")
+	params.Add("size", "1")
+	params.Add("q", fmt.Sprintf(`doi:"%s"`, doi))
+
+	queryURL := fmt.Sprintf("%s/api/records?%s", server, params.Encode())
+	resp, err := http.Get(queryURL)
+	if err != nil {
+		return fmt.Errorf("could not contact server at %s", server)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("could not retrieve doi %s: %s", doi, resp.Status)
+	}
+	defer resp.Body.Close()
+
+	r := &apiRecords{}
+	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
+		return fmt.Errorf("failed to parse json from response: %v", err)
+	}
+
+	if r.Hits.Total != 1 {
+		return fmt.Errorf("failed to get record id from doi")
+	}
+	recordID = r.Hits.Hits[0].Metadata.Recid
 	i, err := strconv.Atoi(recordID)
 	if (err != nil) || (i < 1) {
 		return fmt.Errorf("recordID needs to be positive integer number")
 	}
 
+	return nil
+}
+
+func verifyUniqueID() error {
+	switch {
+	case recordID != "" && doi != "":
+		return fmt.Errorf("can not combine recordID with doi")
+	case recordID != "":
+		i, err := strconv.Atoi(recordID)
+		if (err != nil) || (i < 1) {
+			return fmt.Errorf("recordID needs to be positive integer number")
+		}
+	case doi != "":
+		if err := getRecordIDFromDoi(); err != nil {
+			return fmt.Errorf("failed to get recordID from doi: %v", err)
+		}
+	default:
+		return fmt.Errorf("either recordID or doi is required")
+	}
 	queryURL := fmt.Sprintf("%s/record/%s", server, recordID)
 	resp, err := http.Get(queryURL)
 	if err != nil {
 		return fmt.Errorf("could not contact server at %s", server)
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("could not retrieve record %s: %s", recordID, resp.Status)
 	}
@@ -183,11 +268,11 @@ func getFilesList(recordJSON map[string]interface{}) ([]string, error) {
 	}
 
 	if protocol == "http" {
-		  filesSliceHttp := make([]string, 0)
-		  for i := range filesSlice {
+		filesSliceHttp := make([]string, 0)
+		for i := range filesSlice {
 			filesSliceHttp = append(filesSliceHttp, strings.Replace(filesSlice[i], "root://eospublic.cern.ch/", server, 1))
-		  }
-		  filesSlice = filesSliceHttp
+		}
+		filesSlice = filesSliceHttp
 	}
 
 	return filesSlice, nil
