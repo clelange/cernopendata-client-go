@@ -18,12 +18,10 @@ var (
 		Long: `This command will print a list of data file locations
 (URIs) associated with the record ID provided.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			err := validateProtocolChoice()
-			if err != nil {
+			if err := validateProtocolChoice(); err != nil {
 				er(err)
 			}
-			err = verifyRecordID()
-			if err != nil {
+			if err := verifyUniqueID(); err != nil {
 				er(err)
 			}
 			recordJSON, err := getRecordJSON()
