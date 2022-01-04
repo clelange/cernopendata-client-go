@@ -1,7 +1,10 @@
 package cmd
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -9,6 +12,8 @@ import (
 func init() {
 	rootCmd.AddCommand(listCmd)
 	listCmd.PersistentFlags().StringVarP(&protocol, "protocol", "p", "http", "Protocol to be used (http or root)")
+	listCmd.Flags().BoolVar(&jsonOut, "json", false, "Json output.")
+
 }
 
 var (
@@ -27,6 +32,17 @@ var (
 			recordJSON, err := getRecordJSON()
 			if err != nil {
 				er(err)
+			}
+			if jsonOut {
+				b, err := json.Marshal(recordJSON)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Failed to marshal json: %v", err)
+					return
+				}
+				var out bytes.Buffer
+				json.Indent(&out, b, "", "\t")
+				out.WriteTo(os.Stdout)
+				return
 			}
 			filesList, err := getFilesList(recordJSON)
 			if err != nil {
