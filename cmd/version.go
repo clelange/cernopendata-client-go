@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -11,7 +10,7 @@ import (
 
 func init() {
 	versionCmd.Flags().BoolVar(&shortened, "short", false, "Print just the version number.")
-	versionCmd.Flags().BoolVar(&jsonOut, "json", false, "Json output.")
+	versionCmd.Flags().BoolVar(&jsonOut, "json", false, "JSON output.")
 	rootCmd.AddCommand(versionCmd)
 }
 
@@ -35,19 +34,17 @@ var (
 					Commit  string
 					Date    string
 				}
-				b, err := json.Marshal(versioning{
+				b, err := json.MarshalIndent(versioning{
 					Name:    "cernopendata-client-go",
 					Version: version,
 					Commit:  commit,
 					Date:    date,
-				})
+				}, "", "\t")
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Failed to marshal json: %v", err)
 					return
 				}
-				var out bytes.Buffer
-				json.Indent(&out, b, "", "\t")
-				out.WriteTo(os.Stdout)
+				fmt.Println(string(b))
 			case shortened:
 				fmt.Println(version)
 			default:

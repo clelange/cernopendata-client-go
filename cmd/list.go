@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -12,7 +11,7 @@ import (
 func init() {
 	rootCmd.AddCommand(listCmd)
 	listCmd.PersistentFlags().StringVarP(&protocol, "protocol", "p", "http", "Protocol to be used (http or root)")
-	listCmd.Flags().BoolVar(&jsonOut, "json", false, "Json output.")
+	listCmd.Flags().BoolVar(&jsonOut, "json", false, "JSON output.")
 
 }
 
@@ -34,14 +33,12 @@ var (
 				er(err)
 			}
 			if jsonOut {
-				b, err := json.Marshal(recordJSON)
+				b, err := json.MarshalIndent(recordJSON, "", "\t")
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Failed to marshal json: %v", err)
 					return
 				}
-				var out bytes.Buffer
-				json.Indent(&out, b, "", "\t")
-				out.WriteTo(os.Stdout)
+				fmt.Println(string(b))
 				return
 			}
 			filesList, err := getFilesList(recordJSON)
