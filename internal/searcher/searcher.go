@@ -1,0 +1,246 @@
+package searcher
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
+
+	"github.com/cernopendata/cernopendata-client-go/internal/config"
+)
+
+type RecordResponse struct {
+	Metadata RecordMetadata `json:"metadata"`
+	ID       string         `json:"id"`
+}
+
+type RecordMetadata struct {
+	Title         string        `json:"title"`
+	RecID         int           `json:"recid,string"` // Parse as string, convert to int
+	DOI           string        `json:"doi"`
+	Files         []FileInfo    `json:"files"`
+	FileIndices   []FileIndex   `json:"_file_indices"`
+	SystemDetails SystemDetails `json:"system_details"`
+	Usage         Usage         `json:"usage"`
+}
+
+type SystemDetails struct {
+	ContainerImages []ContainerImage `json:"container_images"`
+	GlobalTag       string           `json:"global_tag"`
+	Release         string           `json:"release"`
+}
+
+type ContainerImage struct {
+	Name     string `json:"name"`
+	Registry string `json:"registry"`
+}
+
+type Usage struct {
+	Description string      `json:"description"`
+	Links       []UsageLink `json:"links"`
+}
+
+type UsageLink struct {
+	Description string `json:"description"`
+	URL         string `json:"url"`
+}
+
+type FileInfo struct {
+	URI      string `json:"uri"`
+	Size     int64  `json:"size"`
+	Checksum string `json:"checksum"`
+}
+
+type FileIndex struct {
+	Key      string          `json:"key"`
+	Size     int64           `json:"size"`
+	Checksum string          `json:"checksum"`
+	Files    []InnerFileInfo `json:"files"`
+}
+
+type InnerFileInfo struct {
+	URI      string `json:"uri"`
+	Size     int64  `json:"size"`
+	Checksum string `json:"checksum"`
+}
+
+type SearchResponse struct {
+	Hits SearchHits `json:"hits"`
+}
+
+type SearchHits struct {
+	Total int         `json:"total"`
+	Hits  []SearchHit `json:"hits"`
+}
+
+type SearchHit struct {
+	ID string `json:"id"`
+}
+
+type Client struct {
+	server string
+	client *http.Client
+}
+
+func NewClient(server string) *Client {
+	return &Client{
+		server: server,
+		client: &http.Client{},
+	}
+}
+
+func (c *Client) GetRecord(recid int) (*RecordResponse, error) {
+	url := fmt.Sprintf("%s/api/records/%d", c.server, recid)
+	resp, err := c.client.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get record %d: %w", recid, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("server returned status %d for record %d", resp.StatusCode, recid)
+	}
+
+	var recordResp RecordResponse
+	if err := json.NewDecoder(resp.Body).Decode(&recordResp); err != nil {
+		return nil, fmt.Errorf("failed to decode record response: %w", err)
+	}
+
+	return &recordResp, nil
+}
+
+func (c *Client) GetRecordByDOI(doi string) (*RecordResponse, error) {
+	return c.getRecordBySearch("doi", doi)
+}
+
+func (c *Client) GetRecordByTitle(title string) (*RecordResponse, error) {
+	return c.getRecordBySearch("title", title)
+}
+
+func (c *Client) getRecordBySearch(field, value string) (*RecordResponse, error) {
+	searchURL := fmt.Sprintf("%s/api/records?page=1&size=1&q=%s:%s",
+		c.server,
+		field,
+		url.QueryEscape(fmt.Sprintf("\"%s\"", value)),
+	)
+
+	resp, err := c.client.Get(searchURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to search for %s: %w", field, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("server returned status %d for search", resp.StatusCode)
+	}
+
+	var searchResp SearchResponse
+	if err := json.NewDecoder(resp.Body).Decode(&searchResp); err != nil {
+		return nil, fmt.Errorf("failed to decode search response: %w", err)
+	}
+
+	if searchResp.Hits.Total == 0 {
+		return nil, fmt.Errorf("no record found with %s: %s", field, value)
+	}
+
+	if searchResp.Hits.Total > 1 {
+		return nil, fmt.Errorf("more than one record found with %s: %s", field, value)
+	}
+
+	return c.GetRecordByID(searchResp.Hits.Hits[0].ID)
+}
+
+func (c *Client) GetRecordByID(id string) (*RecordResponse, error) {
+	recordID, err := strconv.Atoi(id)
+	if err != nil {
+		return nil, fmt.Errorf("invalid record ID: %w", err)
+	}
+	return c.GetRecord(recordID)
+}
+
+func (c *Client) GetFilesList(record *RecordResponse, protocol string, expand bool) []FileInfo {
+	var files []FileInfo
+
+	serverRoot := config.ServerRootURI
+	serverURI := c.server
+
+	for _, file := range record.Metadata.Files {
+		uri := file.URI
+		if strings.HasPrefix(uri, serverRoot) {
+			if protocol == "http" {
+				uri = strings.Replace(uri, serverRoot, serverURI+"/", 1)
+			} else if protocol == "https" {
+				uri = strings.Replace(uri, serverRoot, config.ServerHTTPSURI+"/", 1)
+			}
+		}
+		files = append(files, FileInfo{
+			URI:      uri,
+			Size:     file.Size,
+			Checksum: file.Checksum,
+		})
+	}
+
+	if expand {
+		for _, index := range record.Metadata.FileIndices {
+			for _, innerFile := range index.Files {
+				uri := innerFile.URI
+				if strings.HasPrefix(uri, serverRoot) {
+					if protocol == "http" {
+						uri = strings.Replace(uri, serverRoot, serverURI+"/", 1)
+					} else if protocol == "https" {
+						uri = strings.Replace(uri, serverRoot, config.ServerHTTPSURI+"/", 1)
+					}
+				}
+				files = append(files, FileInfo{
+					URI:      uri,
+					Size:     innerFile.Size,
+					Checksum: innerFile.Checksum,
+				})
+			}
+		}
+	} else {
+		for _, index := range record.Metadata.FileIndices {
+			var uri string
+			if protocol == "xrootd" {
+				uri = fmt.Sprintf("%s/record/%d/file_index/%s", serverRoot, record.Metadata.RecID, index.Key)
+			} else {
+				uri = fmt.Sprintf("%s/record/%d/file_index/%s", serverURI, record.Metadata.RecID, index.Key)
+			}
+			files = append(files, FileInfo{
+				URI:      uri,
+				Size:     index.Size,
+				Checksum: "",
+			})
+		}
+	}
+
+	return files
+}
+
+func GetRecid(server, doi string, title string, recid int) (int, error) {
+	if recid > 0 {
+		return recid, nil
+	}
+
+	client := NewClient(server)
+
+	if doi != "" {
+		record, err := client.GetRecordByDOI(doi)
+		if err != nil {
+			return 0, err
+		}
+		return record.Metadata.RecID, nil
+	}
+
+	if title != "" {
+		record, err := client.GetRecordByTitle(title)
+		if err != nil {
+			return 0, err
+		}
+		return record.Metadata.RecID, nil
+	}
+
+	return 0, fmt.Errorf("please provide recid, doi, or title")
+}

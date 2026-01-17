@@ -1,0 +1,315 @@
+package downloader
+
+import (
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
+	"regexp"
+	"time"
+
+	"github.com/cernopendata/cernopendata-client-go/internal/config"
+	"github.com/cernopendata/cernopendata-client-go/internal/printer"
+)
+
+type DownloadStats struct {
+	TotalFiles      int
+	TotalBytes      int64
+	DownloadedFiles int
+	DownloadedBytes int64
+	FailedFiles     int
+	SkippedFiles    int
+}
+
+type FileDownloadResult struct {
+	URL      string
+	Path     string
+	Size     int64
+	Checksum string
+	Success  bool
+	Error    error
+	Retries  int
+}
+
+type Downloader struct {
+	client     *http.Client
+	retryLimit int
+	retrySleep int
+	verbose    bool
+	dryRun     bool
+}
+
+func NewDownloader() *Downloader {
+	return &Downloader{
+		client: &http.Client{
+			Timeout: 30 * time.Minute,
+		},
+		retryLimit: config.DownloadRetryLimit,
+		retrySleep: config.DownloadRetrySleep,
+	}
+}
+
+func (d *Downloader) DownloadFile(url, destPath string, resume bool) (*FileDownloadResult, error) {
+	var existingSize int64
+
+	if resume {
+		if fi, err := os.Stat(destPath); err == nil {
+			existingSize = fi.Size()
+			printer.DisplayMessage(printer.Note, fmt.Sprintf("Resuming %s from %d bytes", destPath, existingSize))
+		} else if !os.IsNotExist(err) {
+			return nil, fmt.Errorf("error checking file: %w", err)
+		}
+	}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	if resume && existingSize > 0 {
+		req.Header.Set("Range", fmt.Sprintf("bytes=%d-", existingSize))
+		printer.DisplayMessage(printer.Note, fmt.Sprintf("Range: bytes=%d-", existingSize))
+	}
+
+	var lastErr error
+	var attempt int
+
+	for attempt = 0; attempt < d.retryLimit; attempt++ {
+		if attempt > 0 {
+			printer.DisplayMessage(printer.Note, fmt.Sprintf("Retry attempt %d/%d after %ds...", attempt+1, d.retryLimit, d.retrySleep))
+			time.Sleep(time.Duration(d.retrySleep) * time.Second)
+		}
+
+		resp, err := d.client.Do(req)
+		if err != nil {
+			lastErr = err
+			printer.DisplayMessage(printer.Note, fmt.Sprintf("Download failed: %v", err))
+			continue
+		}
+
+		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusPartialContent {
+			body, _ := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			lastErr = fmt.Errorf("server returned %d: %s", resp.StatusCode, string(body))
+			printer.DisplayMessage(printer.Note, fmt.Sprintf("Server error: %d", resp.StatusCode))
+			continue
+		}
+
+		if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
+			resp.Body.Close()
+			return nil, fmt.Errorf("failed to create directory: %w", err)
+		}
+
+		var file *os.File
+		if resume && existingSize > 0 && resp.StatusCode == http.StatusPartialContent {
+			file, err = os.OpenFile(destPath, os.O_APPEND|os.O_WRONLY, 0644)
+		} else {
+			file, err = os.Create(destPath)
+		}
+
+		if err != nil {
+			resp.Body.Close()
+			return nil, fmt.Errorf("failed to open file: %w", err)
+		}
+
+		written, err := io.Copy(file, resp.Body)
+		file.Close()
+		resp.Body.Close()
+
+		if err != nil {
+			lastErr = err
+			printer.DisplayMessage(printer.Note, fmt.Sprintf("Write error: %v", err))
+			continue
+		}
+
+		if d.verbose {
+			printer.DisplayMessage(printer.Note, fmt.Sprintf("Downloaded %d bytes to %s", written, destPath))
+		}
+
+		return &FileDownloadResult{
+			URL:     url,
+			Path:    destPath,
+			Success: true,
+			Size:    existingSize + written,
+			Retries: attempt,
+		}, nil
+	}
+
+	return &FileDownloadResult{
+		URL:     url,
+		Path:    destPath,
+		Success: false,
+		Error:   lastErr,
+		Retries: attempt - 1,
+	}, lastErr
+}
+
+func (d *Downloader) DownloadFiles(files []interface{}, baseDir string, retry int, retrySleep int, verbose bool, dryRun bool) DownloadStats {
+	d.retryLimit = retry
+	d.retrySleep = retrySleep
+	d.verbose = verbose
+	d.dryRun = dryRun
+
+	stats := DownloadStats{}
+	stats.TotalFiles = len(files)
+
+	if err := os.MkdirAll(baseDir, 0755); err != nil {
+		printer.DisplayMessage(printer.Error, fmt.Sprintf("Failed to create directory %s: %v", baseDir, err))
+		return stats
+	}
+
+	for i, file := range files {
+		fileMap, ok := file.(map[string]interface{})
+		if !ok {
+			printer.DisplayMessage(printer.Note, fmt.Sprintf("Skipping invalid file entry %d", i))
+			stats.SkippedFiles++
+			continue
+		}
+
+		uri, _ := fileMap["uri"].(string)
+		size, _ := fileMap["size"].(float64)
+		checksum, _ := fileMap["checksum"].(string)
+
+		stats.TotalBytes += int64(size)
+
+		printer.DisplayMessage(printer.Info, fmt.Sprintf("Downloading file %d/%d: %s", i+1, stats.TotalFiles, filepath.Base(uri)))
+
+		if dryRun {
+			printer.DisplayMessage(printer.Note, fmt.Sprintf("Would download: %s (size: %d, checksum: %s)", uri, int64(size), checksum))
+			stats.DownloadedFiles++
+			stats.DownloadedBytes += int64(size)
+			continue
+		}
+
+		destPath := filepath.Join(baseDir, filepath.Base(uri))
+
+		if _, err := os.Stat(destPath); err == nil {
+			printer.DisplayMessage(printer.Note, fmt.Sprintf("File already exists: %s", destPath))
+			stats.SkippedFiles++
+			continue
+		}
+
+		result, err := d.DownloadFile(uri, destPath, true)
+		if err != nil {
+			printer.DisplayMessage(printer.Error, fmt.Sprintf("Failed to download %s: %v", uri, err))
+			stats.FailedFiles++
+		} else if result.Success {
+			stats.DownloadedFiles++
+			stats.DownloadedBytes += result.Size
+		}
+	}
+
+	printer.DisplayMessage(printer.Info, fmt.Sprintf("\nDownload summary:"))
+	printer.DisplayMessage(printer.Note, fmt.Sprintf("  Total files:     %d", stats.TotalFiles))
+	printer.DisplayMessage(printer.Note, fmt.Sprintf("  Downloaded:     %d", stats.DownloadedFiles))
+	printer.DisplayMessage(printer.Note, fmt.Sprintf("  Skipped:        %d", stats.SkippedFiles))
+	printer.DisplayMessage(printer.Note, fmt.Sprintf("  Failed:         %d", stats.FailedFiles))
+	printer.DisplayMessage(printer.Note, fmt.Sprintf("  Total bytes:    %d", stats.DownloadedBytes))
+
+	return stats
+}
+
+func ParseFileList(files []interface{}) []interface{} {
+	return files
+}
+
+func FilterFiles(files []interface{}, filter string) []interface{} {
+	if filter == "" {
+		return files
+	}
+
+	var result []interface{}
+	for _, file := range files {
+		fileMap, ok := file.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		uri, _ := fileMap["uri"].(string)
+		matched, err := filepath.Match(filter, filepath.Base(uri))
+		if err != nil {
+			continue
+		}
+		if matched {
+			result = append(result, file)
+		}
+	}
+
+	return result
+}
+
+func FilterFilesByRange(files []interface{}, start, end int) []interface{} {
+	if start < 0 || end < 0 {
+		return files
+	}
+
+	total := len(files)
+	if start >= total {
+		return []interface{}{}
+	}
+
+	if end > total {
+		end = total
+	}
+
+	if start >= end {
+		return []interface{}{}
+	}
+
+	return files[start:end]
+}
+
+func FilterFilesByMultipleRanges(files []interface{}, ranges [][2]int) []interface{} {
+	if len(ranges) == 0 {
+		return files
+	}
+
+	var result []interface{}
+	for _, r := range ranges {
+		filtered := FilterFilesByRange(files, r[0], r[1])
+		result = append(result, filtered...)
+	}
+
+	return result
+}
+
+func FilterFilesByMultipleNames(files []interface{}, filters []string) []interface{} {
+	if len(filters) == 0 {
+		return files
+	}
+
+	var result []interface{}
+	for _, filter := range filters {
+		filtered := FilterFiles(files, filter)
+		result = append(result, filtered...)
+	}
+
+	return result
+}
+
+func FilterFilesByRegex(files []interface{}, pattern string) []interface{} {
+	if pattern == "" {
+		return files
+	}
+
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return files
+	}
+
+	var result []interface{}
+	for _, file := range files {
+		fileMap, ok := file.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		uri, _ := fileMap["uri"].(string)
+		if re.MatchString(filepath.Base(uri)) {
+			result = append(result, file)
+		}
+	}
+
+	return result
+}
