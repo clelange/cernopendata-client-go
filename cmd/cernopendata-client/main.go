@@ -80,6 +80,18 @@ var versionCmd = &cobra.Command{
 var getMetadataCmd = &cobra.Command{
 	Use:   "get-metadata",
 	Short: "Get metadata content of a record",
+	Long: `Get metadata content of a record.
+
+Select a CERN Open Data bibliographic record by a record ID, a
+DOI, or a title and return its metadata in the JSON format.
+
+Examples:
+
+     $ cernopendata-client get-metadata --recid 1
+
+     $ cernopendata-client get-metadata --recid 1 --output-value title
+
+     $ cernopendata-client get-metadata --recid 329 --output-value authors.orcid --filter name="Rousseau, David"`,
 	Run: func(cmd *cobra.Command, args []string) {
 		recid, err := cmd.Flags().GetInt("recid")
 		if err != nil {
@@ -165,6 +177,18 @@ var getMetadataCmd = &cobra.Command{
 var getFileLocationsCmd = &cobra.Command{
 	Use:   "get-file-locations",
 	Short: "Get a list of data file locations of a record",
+	Long: `Get a list of data file locations of a record.
+
+Select a CERN Open Data bibliographic record by a record ID, a DOI, or a
+title and return the list of data file locations belonging to this record.
+
+Examples:
+
+     $ cernopendata-client get-file-locations --recid 5500
+
+     $ cernopendata-client get-file-locations --recid 5500 --protocol xrootd
+
+     $ cernopendata-client get-file-locations --recid 5500 --verbose`,
 	Run: func(cmd *cobra.Command, args []string) {
 		recid, err := cmd.Flags().GetInt("recid")
 		if err != nil {
@@ -175,8 +199,18 @@ var getFileLocationsCmd = &cobra.Command{
 		title, _ := cmd.Flags().GetString("title")
 		protocol, _ := cmd.Flags().GetString("protocol")
 		expand, _ := cmd.Flags().GetBool("expand")
+		noExpand, _ := cmd.Flags().GetBool("no-expand")
 		verbose, _ := cmd.Flags().GetBool("verbose")
 		server, _ := cmd.Flags().GetString("server")
+
+		if cmd.Flags().Changed("expand") && cmd.Flags().Changed("no-expand") {
+			printer.DisplayMessage(printer.Error, "Cannot specify both --expand and --no-expand")
+			os.Exit(1)
+		}
+
+		if noExpand {
+			expand = false
+		}
 
 		if server == "" {
 			server = config.ServerHTTPURI
@@ -209,6 +243,22 @@ var getFileLocationsCmd = &cobra.Command{
 var downloadFilesCmd = &cobra.Command{
 	Use:   "download-files",
 	Short: "Download files from a record",
+	Long: `Download data files belonging to a record.
+
+Select a CERN Open Data bibliographic record by a record ID, a
+DOI, or a title and download data files belonging to this record.
+
+Examples:
+
+     $ cernopendata-client download-files --recid 5500
+
+     $ cernopendata-client download-files --recid 5500 --name-filter BuildFile.xml
+
+     $ cernopendata-client download-files --recid 5500 --regexp py$
+
+     $ cernopendata-client download-files --recid 5500 --range-filter 1-4
+
+     $ cernopendata-client download-files --recid 5500 --range-filter 1-2,5-7`,
 	Run: func(cmd *cobra.Command, args []string) {
 		recid, err := cmd.Flags().GetInt("recid")
 		if err != nil {
@@ -222,6 +272,7 @@ var downloadFilesCmd = &cobra.Command{
 		regexpFilter, _ := cmd.Flags().GetString("regexp")
 		rangeFilter, _ := cmd.Flags().GetString("range-filter")
 		expand, _ := cmd.Flags().GetBool("expand")
+		noExpand, _ := cmd.Flags().GetBool("no-expand")
 		start, _ := cmd.Flags().GetInt("start-index")
 		end, _ := cmd.Flags().GetInt("end-index")
 		retry, _ := cmd.Flags().GetInt("retry")
@@ -231,6 +282,15 @@ var downloadFilesCmd = &cobra.Command{
 		verifyFlag, _ := cmd.Flags().GetBool("verify")
 		downloadEngine, _ := cmd.Flags().GetString("download-engine")
 		server, _ := cmd.Flags().GetString("server")
+
+		if cmd.Flags().Changed("expand") && cmd.Flags().Changed("no-expand") {
+			printer.DisplayMessage(printer.Error, "Cannot specify both --expand and --no-expand")
+			os.Exit(1)
+		}
+
+		if noExpand {
+			expand = false
+		}
 
 		if server == "" {
 			server = config.ServerHTTPURI
@@ -350,6 +410,15 @@ var downloadFilesCmd = &cobra.Command{
 var verifyFilesCmd = &cobra.Command{
 	Use:   "verify-files",
 	Short: "Verify local files against expected checksums and sizes",
+	Long: `Verify downloaded data file integrity.
+
+Select a CERN Open Data bibliographic record by a record ID, a
+DOI, or a title and verify integrity of downloaded data files
+belonging to this record.
+
+Examples:
+
+     $ cernopendata-client verify-files --recid 5500`,
 	Run: func(cmd *cobra.Command, args []string) {
 		recid, err := cmd.Flags().GetInt("recid")
 		if err != nil {
@@ -507,30 +576,32 @@ var listDirectoryCmd = &cobra.Command{
 }
 
 func init() {
-	getMetadataCmd.Flags().IntP("recid", "r", 0, "Get metadata by record ID")
-	getMetadataCmd.Flags().StringP("doi", "d", "", "Get metadata by DOI")
-	getMetadataCmd.Flags().StringP("title", "t", "", "Get metadata by title")
-	getMetadataCmd.Flags().StringP("output-value", "v", "", "Get specific field value from metadata")
-	getMetadataCmd.Flags().StringP("filter", "f", "", "Filter output by field=value")
+	getMetadataCmd.Flags().IntP("recid", "r", 0, "Record ID (exact match)")
+	getMetadataCmd.Flags().StringP("doi", "d", "", "Digital Object Identifier (exact match)")
+	getMetadataCmd.Flags().StringP("title", "t", "", "Record title (exact match, no wildcards)")
+	getMetadataCmd.Flags().StringP("output-value", "v", "", "Output value of only desired metadata field [example=title]")
+	getMetadataCmd.Flags().StringP("filter", "f", "", "Filter only certain output values matching filtering criteria. [Use --filter some_field_name=some_value]")
 	getMetadataCmd.Flags().StringP("format", "m", "pretty", "Output format (pretty|json)")
-	getMetadataCmd.Flags().StringP("server", "s", "", "Server URI")
+	getMetadataCmd.Flags().StringP("server", "s", "", "Which CERN Open Data server to query? [default=http://opendata.cern.ch]")
 
-	getFileLocationsCmd.Flags().IntP("recid", "i", 0, "Get file locations by record ID")
-	getFileLocationsCmd.Flags().StringP("doi", "D", "", "Get file locations by DOI")
-	getFileLocationsCmd.Flags().StringP("title", "T", "", "Get file locations by title")
-	getFileLocationsCmd.Flags().StringP("protocol", "p", "http", "Protocol to use (http|https)")
-	getFileLocationsCmd.Flags().BoolP("expand", "e", false, "Expand file indices")
-	getFileLocationsCmd.Flags().BoolP("verbose", "V", false, "Verbose output")
-	getFileLocationsCmd.Flags().StringP("server", "S", "", "Server URI")
+	getFileLocationsCmd.Flags().IntP("recid", "i", 0, "Record ID (exact match)")
+	getFileLocationsCmd.Flags().StringP("doi", "D", "", "Digital Object Identifier (exact match)")
+	getFileLocationsCmd.Flags().StringP("title", "T", "", "Record title (exact match, no wildcards)")
+	getFileLocationsCmd.Flags().StringP("protocol", "p", "http", "Protocol to be used in links [http,xrootd]")
+	getFileLocationsCmd.Flags().BoolP("expand", "e", true, "Expand file indexes?")
+	getFileLocationsCmd.Flags().Bool("no-expand", false, "Don't expand file indexes")
+	getFileLocationsCmd.Flags().BoolP("verbose", "V", false, "Output also the file size (in the second column) and the file checksum (in the third column)")
+	getFileLocationsCmd.Flags().StringP("server", "S", "", "Which CERN Open Data server to query? [default=http://opendata.cern.ch]")
 
-	downloadFilesCmd.Flags().IntP("recid", "R", 0, "Download files by record ID")
-	downloadFilesCmd.Flags().StringP("doi", "d", "", "Download files by DOI")
-	downloadFilesCmd.Flags().StringP("title", "t", "", "Download files by title")
+	downloadFilesCmd.Flags().IntP("recid", "R", 0, "Record ID (exact match)")
+	downloadFilesCmd.Flags().StringP("doi", "d", "", "Digital Object Identifier (exact match)")
+	downloadFilesCmd.Flags().StringP("title", "t", "", "Record title (exact match, no wildcards)")
 	downloadFilesCmd.Flags().StringP("output-dir", "O", "", "Output directory")
-	downloadFilesCmd.Flags().StringP("name-filter", "n", "", "Filter files by glob pattern")
-	downloadFilesCmd.Flags().StringP("regexp", "e", "", "Filter files by regular expression")
-	downloadFilesCmd.Flags().StringP("range-filter", "r", "", "Filter files by index ranges (e.g., '0-2,5-7')")
-	downloadFilesCmd.Flags().BoolP("expand", "x", false, "Expand file indices")
+	downloadFilesCmd.Flags().StringP("name-filter", "n", "", "Download files matching exactly the file name")
+	downloadFilesCmd.Flags().StringP("regexp", "e", "", "Download files matching the regular expression")
+	downloadFilesCmd.Flags().StringP("range-filter", "r", "", "Download files from a specified list range (i-j)")
+	downloadFilesCmd.Flags().BoolP("expand", "x", true, "Expand file indexes?")
+	downloadFilesCmd.Flags().Bool("no-expand", false, "Don't expand file indexes")
 	downloadFilesCmd.Flags().IntP("start-index", "a", -1, "Start index of files to download")
 	downloadFilesCmd.Flags().IntP("end-index", "z", -1, "End index of files to download")
 	downloadFilesCmd.Flags().IntP("retry", "y", 10, "Number of retry attempts")
@@ -540,15 +611,15 @@ func init() {
 	downloadFilesCmd.Flags().BoolP("dry-run", "N", false, "Dry run (don't actually download)")
 	downloadFilesCmd.Flags().BoolP("verify", "V", false, "Verify downloaded files")
 	downloadFilesCmd.Flags().String("download-engine", "", "Download engine to use (http|xrootd)")
-	downloadFilesCmd.Flags().StringP("server", "s", "", "Server URI")
+	downloadFilesCmd.Flags().StringP("server", "s", "", "Which CERN Open Data server to query? [default=http://opendata.cern.ch]")
 
-	verifyFilesCmd.Flags().IntP("recid", "r", 0, "Verify files by record ID")
-	verifyFilesCmd.Flags().StringP("doi", "d", "", "Verify files by DOI")
-	verifyFilesCmd.Flags().StringP("title", "t", "", "Verify files by title")
+	verifyFilesCmd.Flags().IntP("recid", "r", 0, "Record ID (exact match)")
+	verifyFilesCmd.Flags().StringP("doi", "d", "", "Digital Object Identifier (exact match)")
+	verifyFilesCmd.Flags().StringP("title", "t", "", "Record title (exact match, no wildcards)")
 	verifyFilesCmd.Flags().StringP("input-dir", "i", "", "Input directory containing files to verify")
-	verifyFilesCmd.Flags().StringP("name-filter", "n", "", "Filter files by glob pattern")
-	verifyFilesCmd.Flags().StringP("regexp", "e", "", "Filter files by regular expression")
-	verifyFilesCmd.Flags().StringP("server", "s", "", "Server URI")
+	verifyFilesCmd.Flags().StringP("name-filter", "n", "", "Verify files matching exactly the file name")
+	verifyFilesCmd.Flags().StringP("regexp", "e", "", "Verify files matching the regular expression")
+	verifyFilesCmd.Flags().StringP("server", "s", "", "Which CERN Open Data server to query? [default=http://opendata.cern.ch]")
 
 	listDirectoryCmd.Flags().BoolP("verbose", "v", false, "Verbose output")
 	listDirectoryCmd.Flags().BoolP("recursive", "r", false, "Recursive directory listing")
