@@ -253,7 +253,7 @@ func FilterFilesByRange(files []interface{}, start, end int) []interface{} {
 		end = total
 	}
 
-	if start >= end {
+	if start > end {
 		return []interface{}{}
 	}
 

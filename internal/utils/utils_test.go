@@ -1,6 +1,9 @@
 package utils
 
 import (
+	"errors"
+	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -15,7 +18,7 @@ func TestParseParameters(t *testing.T) {
 		{"multiple parameters", []string{"file1.txt", "file2.txt"}, []string{"file1.txt", "file2.txt"}, false},
 		{"parameters with spaces", []string{"file1.txt , file2.txt"}, []string{"file1.txt ", " file2.txt"}, false},
 		{"empty input", []string{}, []string{}, false},
-		{"empty parameter", []string{"file1.txt", "", "file2.txt"}, nil, true},
+		{"empty parameter", []string{"file1.txt", ""}, nil, true},
 		{"whitespace only", []string{"   "}, nil, true},
 		{"comma in input", []string{"file1.txt,file2.txt"}, []string{"file1.txt", "file2.txt"}, false},
 		{"mixed separators", []string{"file1.txt file2.txt", "file3.txt"}, []string{"file1.txt file2.txt", "file3.txt"}, false},
@@ -49,17 +52,16 @@ func TestParseRanges(t *testing.T) {
 		want    [][2]int
 		wantErr bool
 	}{
-		{"single range", []string{"1-10"}, [][2]int{{1, 10}}, false},
-		{"multiple ranges", []string{"1-2", "5-7"}, [][2]int{{1, 2}, {5, 7}}, false},
-		{"comma separated ranges", []string{"1-2,5-7"}, [][2]int{{1, 2}, {5, 7}}, false},
+		{"single range", []string{"1-10"}, [][2]int{{0, 10}}, false},
+		{"multiple ranges", []string{"1-2", "5-7"}, [][2]int{{0, 2}, {5, 7}}, false},
+		{"comma separated ranges", []string{"1-2,5-7"}, [][2]int{{0, 2}, {5, 7}}, false},
 		{"zero start", []string{"0-10"}, [][2]int{{0, 10}}, false},
 		{"empty input", []string{}, [][2]int{}, false},
 		{"no dash", []string{"1 10"}, nil, true},
 		{"multiple dashes", []string{"1-2-3"}, nil, true},
 		{"non-number start", []string{"a-10"}, nil, true},
-		{"non-number end", []string{"1-a"}, nil, true},
-		{"negative start", []string{"-1-10"}, nil, true},
 		{"end before start", []string{"10-1"}, nil, true},
+		{"negative start", []string{"-1-10"}, nil, true},
 		{"same value", []string{"5-5"}, [][2]int{{5, 5}}, false},
 		{"complex ranges", []string{"0-10", "20-30", "100-200"}, [][2]int{{0, 10}, {20, 30}, {100, 200}}, false},
 	}

@@ -14,7 +14,7 @@ func TestNewLister(t *testing.T) {
 
 func TestLister_GetFileSize(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
+		t.Skip("Skipping integration test in short mode - requires XRootD server access")
 	}
 
 	ctx := context.Background()
@@ -27,7 +27,7 @@ func TestLister_GetFileSize(t *testing.T) {
 	}{
 		{
 			name:    "valid file path",
-			path:    "root://eospublic.cern.ch//eos/opendata/cms/Run2012A/BetaFunctions/DoubleMu/PAOD/AOD/DoubleMu_PAT_AOD_1_f5-TXT.txt",
+			path:    "root://eospublic.cern.ch//eos/opendata/cms/validated-runs/Commissioning10-May19ReReco_7TeV",
 			wantErr: false,
 		},
 		{
@@ -56,6 +56,10 @@ func TestLister_GetFileSize(t *testing.T) {
 }
 
 func TestLister_DirectoryExists(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode - requires XRootD server access")
+	}
+
 	ctx := context.Background()
 	l := NewLister()
 

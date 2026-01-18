@@ -2,6 +2,8 @@ package downloader
 
 import (
 	"testing"
+
+	"github.com/cernopendata/cernopendata-client-go/internal/utils"
 )
 
 func TestNewDownloader(t *testing.T) {
@@ -121,5 +123,136 @@ func TestFileDownloadResult(t *testing.T) {
 
 	if result.Retries != 2 {
 		t.Errorf("Retries = %d, want 2", result.Retries)
+	}
+}
+
+func TestFilterFilesByMultipleNames(t *testing.T) {
+	fileLocations := []interface{}{
+		map[string]interface{}{"uri": "http://example.com/a.txt"},
+		map[string]interface{}{"uri": "http://example.com/b.txt"},
+		map[string]interface{}{"uri": "http://example.com/c.py"},
+	}
+
+	result := FilterFilesByMultipleNames(fileLocations, []string{"a.txt", "c.py"})
+	if len(result) != 2 {
+		t.Errorf("FilterFilesByMultipleNames() = %d files, want 2", len(result))
+	}
+
+	expectedFiles := map[string]bool{
+		"http://example.com/a.txt": true,
+		"http://example.com/c.py":  true,
+	}
+
+	for _, file := range result {
+		fileMap, ok := file.(map[string]interface{})
+		if !ok {
+			t.Errorf("File is not a map")
+			continue
+		}
+		uri, ok := fileMap["uri"].(string)
+		if !ok {
+			t.Errorf("File URI is not a string")
+			continue
+		}
+		if !expectedFiles[uri] {
+			t.Errorf("Unexpected file: %s", uri)
+		}
+	}
+}
+
+func TestFilterFilesByRegex(t *testing.T) {
+	fileLocations := []interface{}{
+		map[string]interface{}{"uri": "http://example.com/a.py"},
+		map[string]interface{}{"uri": "http://example.com/b.txt"},
+		map[string]interface{}{"uri": "http://example.com/c.py"},
+	}
+
+	result := FilterFilesByRegex(fileLocations, `\.py$`)
+	if len(result) != 2 {
+		t.Errorf("FilterFilesByRegex() = %d files, want 2", len(result))
+	}
+
+	for _, file := range result {
+		fileMap, ok := file.(map[string]interface{})
+		if !ok {
+			t.Errorf("File is not a map")
+			continue
+		}
+		uri, ok := fileMap["uri"].(string)
+		if !ok {
+			t.Errorf("File URI is not a string")
+			continue
+		}
+		if uri != "http://example.com/a.py" && uri != "http://example.com/c.py" {
+			t.Errorf("Unexpected file: %s", uri)
+		}
+	}
+}
+
+func TestFilterFilesByRegexNoMatch(t *testing.T) {
+	fileLocations := []interface{}{
+		map[string]interface{}{"uri": "http://example.com/a.txt"},
+		map[string]interface{}{"uri": "http://example.com/b.txt"},
+	}
+
+	result := FilterFilesByRegex(fileLocations, `\.py$`)
+	if len(result) != 0 {
+		t.Errorf("FilterFilesByRegex() = %d files, want 0 (no matches)", len(result))
+	}
+}
+
+func TestFilterFilesByRangeSingleFile(t *testing.T) {
+	fileLocations := []interface{}{
+		map[string]interface{}{"uri": "http://example.com/file1.txt"},
+		map[string]interface{}{"uri": "http://example.com/file2.txt"},
+		map[string]interface{}{"uri": "http://example.com/file3.txt"},
+	}
+
+	ranges, _ := utils.ParseRanges([]string{"2-2"})
+	result := FilterFilesByMultipleRanges(fileLocations, ranges)
+	if len(result) != 1 {
+		t.Errorf("FilterFilesByMultipleRanges() = %d files, want 1", len(result))
+	}
+
+	if len(result) > 0 {
+		fileMap, ok := result[0].(map[string]interface{})
+		if ok {
+			uri, _ := fileMap["uri"].(string)
+			if uri != "http://example.com/file2.txt" {
+				t.Errorf("Expected file2.txt, got %s", uri)
+			}
+		}
+	}
+}
+
+func TestFilterFilesByRangeWithFilteredFiles(t *testing.T) {
+	filteredFiles := []interface{}{
+		map[string]interface{}{"uri": "http://example.com/file1.txt"},
+		map[string]interface{}{"uri": "http://example.com/file3.txt"},
+	}
+
+	ranges, _ := utils.ParseRanges([]string{"1-2"})
+	result := FilterFilesByMultipleRanges(filteredFiles, ranges)
+	if len(result) != 2 {
+		t.Errorf("FilterFilesByMultipleRanges() = %d files, want 2", len(result))
+	}
+
+	expectedFiles := map[string]bool{
+		"http://example.com/file1.txt": true,
+		"http://example.com/file3.txt": true,
+	}
+
+	for _, file := range result {
+		fileMap, ok := file.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		uri, ok := fileMap["uri"].(string)
+		if !ok {
+			continue
+		}
+		if !expectedFiles[uri] {
+			t.Errorf("Unexpected file: %s", uri)
+		}
 	}
 }

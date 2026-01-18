@@ -442,18 +442,14 @@ var verifyFilesCmd = &cobra.Command{
 }
 
 var listDirectoryCmd = &cobra.Command{
-	Use:   "list-directory",
+	Use:   "list-directory [path]",
 	Short: "List directory contents on XRootD server",
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		path, _ := cmd.Flags().GetString("path")
+		path := args[0]
 		recursive, _ := cmd.Flags().GetBool("recursive")
 		timeout, _ := cmd.Flags().GetInt("timeout")
 		verbose, _ := cmd.Flags().GetBool("verbose")
-
-		if path == "" {
-			printer.DisplayMessage(printer.Error, "Path is required")
-			os.Exit(1)
-		}
 
 		ctx := cmd.Context()
 		if timeout > 0 {
@@ -554,7 +550,6 @@ func init() {
 	verifyFilesCmd.Flags().StringP("regexp", "e", "", "Filter files by regular expression")
 	verifyFilesCmd.Flags().StringP("server", "s", "", "Server URI")
 
-	listDirectoryCmd.Flags().StringP("path", "p", "", "XRootD path to list")
 	listDirectoryCmd.Flags().BoolP("verbose", "v", false, "Verbose output")
 	listDirectoryCmd.Flags().BoolP("recursive", "r", false, "Recursive directory listing")
 	listDirectoryCmd.Flags().IntP("timeout", "t", 0, "Timeout in seconds")
