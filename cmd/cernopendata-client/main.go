@@ -503,8 +503,19 @@ Examples:
 
 var listDirectoryCmd = &cobra.Command{
 	Use:   "list-directory [path]",
-	Short: "List directory contents on XRootD server",
-	Args:  cobra.ExactArgs(1),
+	Short: "List contents of a EOSPUBLIC Open Data directory.",
+	Long: `List contents of a EOSPUBLIC Open Data directory.
+
+Returns the list of files and subdirectories of a given EOSPUBLIC directory.
+
+Examples:
+
+     $ cernopendata-client list-directory /eos/opendata/cms/validated-runs/Commissioning10
+
+     $ cernopendata-client list-directory /eos/opendata/cms/Run2010B/BTau/AOD --recursive
+
+     $ cernopendata-client list-directory /eos/opendata/cms/Run2010B --recursive --timeout 10`,
+	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		path := args[0]
 		recursive, _ := cmd.Flags().GetBool("recursive")
@@ -612,6 +623,6 @@ func init() {
 	verifyFilesCmd.Flags().StringP("server", "s", "", "Which CERN Open Data server to query? [default=http://opendata.cern.ch]")
 
 	listDirectoryCmd.Flags().BoolP("verbose", "v", false, "Verbose output")
-	listDirectoryCmd.Flags().BoolP("recursive", "r", false, "Recursive directory listing")
-	listDirectoryCmd.Flags().IntP("timeout", "t", 0, "Timeout in seconds")
+	listDirectoryCmd.Flags().BoolP("recursive", "r", false, "Iterate recursively in the given directory path")
+	listDirectoryCmd.Flags().IntP("timeout", "t", config.ListDirectoryTimeout, "Timeout in seconds after which to exit running the command")
 }
