@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/clelange/cernopendata-client-go/compare/v0.1.2...v0.1.3) (2026-01-18)
+
+
+### Bug Fixes
+
+* separate checksum upload into dedicated job that waits for binaries ([feacaf7](https://github.com/clelange/cernopendata-client-go/commit/feacaf79b8b7c24e3e9839ddff7374aedd5fe98a))
+
 ## [0.1.2](https://github.com/clelange/cernopendata-client-go/compare/v0.1.1...v0.1.2) (2026-01-18)
 
 
