@@ -252,13 +252,13 @@ Examples:
 
      $ cernopendata-client download-files --recid 5500
 
-     $ cernopendata-client download-files --recid 5500 --name-filter BuildFile.xml
+     $ cernopendata-client download-files --recid 5500 --filter-name BuildFile.xml
 
-     $ cernopendata-client download-files --recid 5500 --regexp py$
+     $ cernopendata-client download-files --recid 5500 --filter-regexp py$
 
-     $ cernopendata-client download-files --recid 5500 --range-filter 1-4
+     $ cernopendata-client download-files --recid 5500 --filter-range 1-4
 
-     $ cernopendata-client download-files --recid 5500 --range-filter 1-2,5-7`,
+     $ cernopendata-client download-files --recid 5500 --filter-range 1-2,5-7`,
 	Run: func(cmd *cobra.Command, args []string) {
 		recid, err := cmd.Flags().GetInt("recid")
 		if err != nil {
@@ -268,19 +268,18 @@ Examples:
 		doi, _ := cmd.Flags().GetString("doi")
 		title, _ := cmd.Flags().GetString("title")
 		outputDir, _ := cmd.Flags().GetString("output-dir")
-		nameFilter, _ := cmd.Flags().GetString("name-filter")
-		regexpFilter, _ := cmd.Flags().GetString("regexp")
-		rangeFilter, _ := cmd.Flags().GetString("range-filter")
+		filterName, _ := cmd.Flags().GetString("filter-name")
+		filterRegexp, _ := cmd.Flags().GetString("filter-regexp")
+		filterRange, _ := cmd.Flags().GetString("filter-range")
 		expand, _ := cmd.Flags().GetBool("expand")
 		noExpand, _ := cmd.Flags().GetBool("no-expand")
-		start, _ := cmd.Flags().GetInt("start-index")
-		end, _ := cmd.Flags().GetInt("end-index")
-		retry, _ := cmd.Flags().GetInt("retry")
+		retryLimit, _ := cmd.Flags().GetInt("retry-limit")
 		retrySleep, _ := cmd.Flags().GetInt("retry-sleep")
 		verbose, _ := cmd.Flags().GetBool("verbose")
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
 		verifyFlag, _ := cmd.Flags().GetBool("verify")
 		downloadEngine, _ := cmd.Flags().GetString("download-engine")
+		protocol, _ := cmd.Flags().GetString("protocol")
 		server, _ := cmd.Flags().GetString("server")
 
 		if cmd.Flags().Changed("expand") && cmd.Flags().Changed("no-expand") {
@@ -313,9 +312,12 @@ Examples:
 			os.Exit(1)
 		}
 
-		protocol := "http"
-		if downloadEngine == "xrootd" {
-			protocol = "xrootd"
+		if protocol == "" {
+			if downloadEngine == "xrootd" {
+				protocol = "xrootd"
+			} else {
+				protocol = "http"
+			}
 		}
 		files := client.GetFilesList(record, protocol, expand)
 		var fileList []interface{}
@@ -327,36 +329,25 @@ Examples:
 			})
 		}
 
-		if nameFilter != "" {
-			nameFilters := strings.Split(nameFilter, ",")
+		if filterName != "" {
+			nameFilters := strings.Split(filterName, ",")
 			for i, filter := range nameFilters {
 				nameFilters[i] = strings.TrimSpace(filter)
 			}
 			fileList = downloader.FilterFilesByMultipleNames(fileList, nameFilters)
 		}
 
-		if regexpFilter != "" {
-			fileList = downloader.FilterFilesByRegex(fileList, regexpFilter)
+		if filterRegexp != "" {
+			fileList = downloader.FilterFilesByRegex(fileList, filterRegexp)
 		}
 
-		if rangeFilter != "" {
-			ranges, err := utils.ParseRanges([]string{rangeFilter})
+		if filterRange != "" {
+			ranges, err := utils.ParseRanges([]string{filterRange})
 			if err != nil {
 				printer.DisplayMessage(printer.Error, fmt.Sprintf("Invalid range filter: %v", err))
 				os.Exit(1)
 			}
 			fileList = downloader.FilterFilesByMultipleRanges(fileList, ranges)
-		} else if start >= 0 || end >= 0 {
-			if start < 0 {
-				start = 0
-			}
-			if end < 0 {
-				end = len(fileList)
-			}
-			if start >= end {
-				fileList = []interface{}{}
-			}
-			fileList = downloader.FilterFilesByRange(fileList, start, end)
 		}
 
 		if len(fileList) == 0 {
@@ -368,7 +359,7 @@ Examples:
 		if downloadEngine == "xrootd" {
 			xrdDownloader := xrootddownloader.NewDownloader()
 			defer xrdDownloader.Close()
-			xrdStats := xrdDownloader.DownloadFiles(cmd.Context(), fileList, outputDir, retry, retrySleep, verbose, dryRun)
+			xrdStats := xrdDownloader.DownloadFiles(cmd.Context(), fileList, outputDir, retryLimit, retrySleep, verbose, dryRun)
 			stats = downloader.DownloadStats{
 				TotalFiles:      xrdStats.TotalFiles,
 				TotalBytes:      xrdStats.TotalBytes,
@@ -379,7 +370,7 @@ Examples:
 			}
 		} else {
 			httpDownloader := downloader.NewDownloader()
-			stats = httpDownloader.DownloadFiles(fileList, outputDir, retry, retrySleep, verbose, dryRun)
+			stats = httpDownloader.DownloadFiles(fileList, outputDir, retryLimit, retrySleep, verbose, dryRun)
 		}
 
 		if verifyFlag {
@@ -428,8 +419,8 @@ Examples:
 		doi, _ := cmd.Flags().GetString("doi")
 		title, _ := cmd.Flags().GetString("title")
 		inputDir, _ := cmd.Flags().GetString("input-dir")
-		nameFilter, _ := cmd.Flags().GetString("name-filter")
-		regexpFilter, _ := cmd.Flags().GetString("regexp")
+		filterName, _ := cmd.Flags().GetString("filter-name")
+		filterRegexp, _ := cmd.Flags().GetString("filter-regexp")
 		server, _ := cmd.Flags().GetString("server")
 
 		if server == "" {
@@ -463,16 +454,16 @@ Examples:
 			})
 		}
 
-		if nameFilter != "" {
-			nameFilters := strings.Split(nameFilter, ",")
+		if filterName != "" {
+			nameFilters := strings.Split(filterName, ",")
 			for i, filter := range nameFilters {
 				nameFilters[i] = strings.TrimSpace(filter)
 			}
 			fileList = downloader.FilterFilesByMultipleNames(fileList, nameFilters)
 		}
 
-		if regexpFilter != "" {
-			fileList = downloader.FilterFilesByRegex(fileList, regexpFilter)
+		if filterRegexp != "" {
+			fileList = downloader.FilterFilesByRegex(fileList, filterRegexp)
 		}
 
 		if len(fileList) == 0 {
@@ -597,28 +588,27 @@ func init() {
 	downloadFilesCmd.Flags().StringP("doi", "d", "", "Digital Object Identifier (exact match)")
 	downloadFilesCmd.Flags().StringP("title", "t", "", "Record title (exact match, no wildcards)")
 	downloadFilesCmd.Flags().StringP("output-dir", "O", "", "Output directory")
-	downloadFilesCmd.Flags().StringP("name-filter", "n", "", "Download files matching exactly the file name")
-	downloadFilesCmd.Flags().StringP("regexp", "e", "", "Download files matching the regular expression")
-	downloadFilesCmd.Flags().StringP("range-filter", "r", "", "Download files from a specified list range (i-j)")
+	downloadFilesCmd.Flags().StringP("filter-name", "n", "", "Download files matching exactly the file name")
+	downloadFilesCmd.Flags().StringP("filter-regexp", "e", "", "Download files matching the regular expression")
+	downloadFilesCmd.Flags().StringP("filter-range", "r", "", "Download files from a specified list range (i-j)")
 	downloadFilesCmd.Flags().BoolP("expand", "x", true, "Expand file indexes?")
 	downloadFilesCmd.Flags().Bool("no-expand", false, "Don't expand file indexes")
-	downloadFilesCmd.Flags().IntP("start-index", "a", -1, "Start index of files to download")
-	downloadFilesCmd.Flags().IntP("end-index", "z", -1, "End index of files to download")
-	downloadFilesCmd.Flags().IntP("retry", "y", 10, "Number of retry attempts")
+	downloadFilesCmd.Flags().IntP("retry-limit", "y", 10, "Number of retries when downloading a file")
 	downloadFilesCmd.Flags().IntP("retry-sleep", "Y", 5, "Sleep time in seconds before retrying downloads")
 	downloadFilesCmd.Flags().BoolP("verbose", "v", false, "Verbose output")
 	downloadFilesCmd.Flags().BoolP("progress", "P", false, "Show progress (alias for verbose)")
 	downloadFilesCmd.Flags().BoolP("dry-run", "N", false, "Dry run (don't actually download)")
 	downloadFilesCmd.Flags().BoolP("verify", "V", false, "Verify downloaded files")
 	downloadFilesCmd.Flags().String("download-engine", "", "Download engine to use (http|xrootd)")
+	downloadFilesCmd.Flags().StringP("protocol", "p", "", "Protocol to be used in links [http,xrootd]")
 	downloadFilesCmd.Flags().StringP("server", "s", "", "Which CERN Open Data server to query? [default=http://opendata.cern.ch]")
 
 	verifyFilesCmd.Flags().IntP("recid", "r", 0, "Record ID (exact match)")
 	verifyFilesCmd.Flags().StringP("doi", "d", "", "Digital Object Identifier (exact match)")
 	verifyFilesCmd.Flags().StringP("title", "t", "", "Record title (exact match, no wildcards)")
 	verifyFilesCmd.Flags().StringP("input-dir", "i", "", "Input directory containing files to verify")
-	verifyFilesCmd.Flags().StringP("name-filter", "n", "", "Verify files matching exactly the file name")
-	verifyFilesCmd.Flags().StringP("regexp", "e", "", "Verify files matching the regular expression")
+	verifyFilesCmd.Flags().StringP("filter-name", "n", "", "Verify files matching exactly the file name")
+	verifyFilesCmd.Flags().StringP("filter-regexp", "e", "", "Verify files matching the regular expression")
 	verifyFilesCmd.Flags().StringP("server", "s", "", "Which CERN Open Data server to query? [default=http://opendata.cern.ch]")
 
 	listDirectoryCmd.Flags().BoolP("verbose", "v", false, "Verbose output")
