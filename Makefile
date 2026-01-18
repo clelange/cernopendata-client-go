@@ -3,12 +3,18 @@ VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev
 
 LDFLAGS = -X cmd/cernopendata-client/main.buildVersion=$(VERSION)
 
-.PHONY: all test build clean build-all
+.PHONY: all test test-integration test-short build clean build-all
 
 all: build
 
 test:
 	go test ./...
+
+test-integration: build
+	go test -tags=integration ./...
+
+test-short:
+	go test -short ./...
 
 build:
 	go build -ldflags "$(LDFLAGS)" -o $(BINARY_NAME) ./cmd/cernopendata-client

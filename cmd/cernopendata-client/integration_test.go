@@ -22,7 +22,7 @@ func getBinaryPath() string {
 	_, callerFile, _, _ := runtime.Caller(0)
 	projectRoot := filepath.Dir(filepath.Dir(callerFile))
 	projectRoot = filepath.Dir(projectRoot)
-	return filepath.Join(projectRoot, "bin", "cernopendata-client")
+	return filepath.Join(projectRoot, "cernopendata-client")
 }
 
 func TestIntegrationGetMetadata(t *testing.T) {
@@ -453,7 +453,7 @@ func TestIntegrationDownloadFiles(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--name-filter", "*.txt", "--output-dir", tmpDir)
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-name", "*.txt", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Logf("Warning: download-files failed (expected if no .txt files): %v\nOutput: %s", err, string(output))
@@ -477,7 +477,7 @@ func TestIntegrationDownloadFilesByDOI(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--doi", "10.7483/OPENDATA.CMS.W26R.J96R", "--name-filter", "readme.txt", "--output-dir", tmpDir)
+	cmd := exec.Command(getBinaryPath(), "download-files", "--doi", "10.7483/OPENDATA.CMS.W26R.J96R", "--filter-name", "readme.txt", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Logf("Warning: download by DOI failed: %v\nOutput: %s", err, string(output))
@@ -629,9 +629,9 @@ func TestIntegrationBinaryExists(t *testing.T) {
 	_, callerFile, _, _ := runtime.Caller(0)
 	projectRoot := filepath.Dir(filepath.Dir(callerFile))
 	projectRoot = filepath.Dir(projectRoot)
-	binaryPath := filepath.Join(projectRoot, "bin", "cernopendata-client")
+	binaryPath := filepath.Join(projectRoot, "cernopendata-client")
 	if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
-		t.Errorf("Binary does not exist at %s. Run 'go build -o bin/cernopendata-client ./cmd/cernopendata-client' first.", binaryPath)
+		t.Errorf("Binary does not exist at %s. Run 'make build' first.", binaryPath)
 	}
 }
 
@@ -653,7 +653,7 @@ func TestIntegrationDownloadFilesFromRecid(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--name-filter", "*.py")
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-name", "*.py")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Logf("Warning: download failed: %v\nOutput: %s", err, string(output))
@@ -693,7 +693,7 @@ func TestIntegrationDownloadFilesFilterName(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "5500", "--name-filter", "BuildFile.xml", "--output-dir", tmpDir)
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "5500", "--filter-name", "BuildFile.xml", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Logf("Warning: download failed: %v\nOutput: %s", err, string(output))
@@ -725,7 +725,7 @@ func TestIntegrationDownloadFilesFilterNameWrong(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "5500", "--name-filter", "nonexistent.txt", "--output-dir", tmpDir)
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "5500", "--filter-name", "nonexistent.txt", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err == nil {
 		t.Fatal("Expected error for non-matching filter, but got none")
@@ -744,7 +744,7 @@ func TestIntegrationDownloadFilesFilterRange(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "5500", "--start-index", "0", "--end-index", "2", "--output-dir", tmpDir)
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "5500", "--filter-range", "0-2", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Logf("Warning: download failed: %v\nOutput: %s", err, string(output))
@@ -764,7 +764,7 @@ func TestIntegrationDownloadFilesFilterRangeInvalid(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "5500", "--start-index", "5", "--end-index", "2", "--output-dir", tmpDir)
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "5500", "--filter-range", "5-2", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Logf("Warning: download failed: %v\nOutput: %s", err, string(output))
@@ -784,7 +784,7 @@ func TestIntegrationDownloadFilesRetry(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--retry", "2", "--name-filter", "*.py", "--output-dir", tmpDir)
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--retry-limit", "2", "--filter-name", "*.py", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Logf("Warning: download failed: %v\nOutput: %s", err, string(output))
@@ -804,7 +804,7 @@ func TestIntegrationDownloadFilesVerbose(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--name-filter", "*.py", "--verbose", "--output-dir", tmpDir)
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-name", "*.py", "--verbose", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Logf("Warning: download failed: %v\nOutput: %s", err, string(output))
@@ -858,7 +858,7 @@ func TestIntegrationDownloadFilesCustomOutputDir(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--name-filter", "*.py", "--output-dir", tmpDir)
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-name", "*.py", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Logf("Warning: download failed: %v\nOutput: %s", err, string(output))
@@ -878,7 +878,7 @@ func TestIntegrationVerifyFilesBasic(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	downloadCmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--name-filter", "*.py", "--output-dir", tmpDir)
+	downloadCmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-name", "*.py", "--output-dir", tmpDir)
 	downloadOutput, downloadErr := downloadCmd.CombinedOutput()
 	if downloadErr != nil {
 		t.Logf("Warning: download failed: %v\nOutput: %s", downloadErr, string(downloadOutput))
@@ -910,14 +910,14 @@ func TestIntegrationVerifyFilesByNameFilter(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	downloadCmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--name-filter", "*.py", "--output-dir", tmpDir)
+	downloadCmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-name", "*.py", "--output-dir", tmpDir)
 	downloadOutput, downloadErr := downloadCmd.CombinedOutput()
 	if downloadErr != nil {
 		t.Logf("Warning: download failed: %v\nOutput: %s", downloadErr, string(downloadOutput))
 		return
 	}
 
-	cmd := exec.Command(getBinaryPath(), "verify-files", "--recid", "3005", "--input-dir", tmpDir, "--name-filter", "*.py")
+	cmd := exec.Command(getBinaryPath(), "verify-files", "--recid", "3005", "--input-dir", tmpDir, "--filter-name", "*.py")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Failed to run verify-files with name filter: %v\nOutput: %s", err, string(output))
@@ -982,7 +982,7 @@ func TestIntegrationVerifyFilesByTitle(t *testing.T) {
 	// Using the partial title "Configuration file for LHE step" will not match
 	tmpDir := t.TempDir()
 
-	downloadCmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--name-filter", "*.py", "--output-dir", tmpDir)
+	downloadCmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-name", "*.py", "--output-dir", tmpDir)
 	downloadOutput, downloadErr := downloadCmd.CombinedOutput()
 	if downloadErr != nil {
 		t.Logf("Warning: download failed: %v\nOutput: %s", downloadErr, string(downloadOutput))
@@ -1024,7 +1024,7 @@ func TestIntegrationVerifyFilesCustomInputDir(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	downloadCmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--name-filter", "*.py", "--output-dir", tmpDir)
+	downloadCmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-name", "*.py", "--output-dir", tmpDir)
 	downloadOutput, downloadErr := downloadCmd.CombinedOutput()
 	if downloadErr != nil {
 		t.Logf("Warning: download failed: %v\nOutput: %s", downloadErr, string(downloadOutput))
@@ -1119,7 +1119,7 @@ func TestIntegrationDownloadFilesMultipleNameFilters(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--name-filter", "*.py,*.txt", "--output-dir", tmpDir)
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-name", "*.py,*.txt", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Logf("Warning: download failed: %v\nOutput: %s", err, string(output))
@@ -1146,7 +1146,7 @@ func TestIntegrationDownloadFilesMultipleRanges(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "5500", "--range-filter", "0-1,3-4", "--output-dir", tmpDir)
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "5500", "--filter-range", "0-1,3-4", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Logf("Warning: download failed: %v\nOutput: %s", err, string(output))
@@ -1166,7 +1166,7 @@ func TestIntegrationDownloadFilesRegexpAndRange(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--regexp", ".*\\.py$", "--range-filter", "0-2", "--output-dir", tmpDir)
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--regexp", ".*\\.py$", "--filter-range", "0-2", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Logf("Warning: download failed: %v\nOutput: %s", err, string(output))
@@ -1189,7 +1189,7 @@ func TestIntegrationDownloadFilesRegexpAndMultipleRanges(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "5500", "--regexp", ".*\\.xml$", "--range-filter", "0-1,3-4", "--output-dir", tmpDir)
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "5500", "--regexp", ".*\\.xml$", "--filter-range", "0-1,3-4", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Logf("Warning: download failed: %v\nOutput: %s", err, string(output))
@@ -1260,7 +1260,7 @@ func TestIntegrationDownloadFilesWithVerify(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--name-filter", "*.py", "--verify", "--output-dir", tmpDir)
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-name", "*.py", "--verify", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Failed to run download-files with verify: %v\nOutput: %s", err, string(output))
@@ -1283,7 +1283,7 @@ func TestIntegrationDownloadFilesWithDownloadEngine(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--name-filter", "*.py", "--download-engine", "http", "--output-dir", tmpDir)
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-name", "*.py", "--download-engine", "http", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Failed to run download-files with download-engine: %v\nOutput: %s", err, string(output))
@@ -1302,7 +1302,7 @@ func TestIntegrationDownloadFilesWithRetrySleep(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--name-filter", "*.py", "--retry-sleep", "2", "--output-dir", tmpDir)
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-name", "*.py", "--retry-sleep", "2", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Failed to run download-files with retry-sleep: %v\nOutput: %s", err, string(output))
@@ -1321,7 +1321,7 @@ func TestIntegrationDownloadFilesWithXRootD(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--name-filter", "*.py", "--download-engine", "xrootd", "--output-dir", tmpDir)
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-name", "*.py", "--download-engine", "xrootd", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Logf("Warning: XRootD download failed (XRootD server may be unavailable): %v\nOutput: %s", err, string(output))
@@ -1350,7 +1350,7 @@ func TestIntegrationDownloadFilesXRootDError(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--name-filter", "*.py", "--download-engine", "xrootd", "--server", "http://invalid.cern.ch", "--output-dir", tmpDir)
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-name", "*.py", "--download-engine", "xrootd", "--server", "http://invalid.cern.ch", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err == nil {
 		t.Log("Note: Command completed (XRootD error handling worked)")
