@@ -5,7 +5,7 @@ on:
     types: [created]
 
 jobs:
-  release:
+  build-binaries:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -37,12 +37,27 @@ jobs:
         with:
           files: dist/cernopendata-client-${{ matrix.target }}
 
+  upload-checksums:
+    needs: build-binaries
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.25'
+          cache: true
+
+      - name: Build all binaries
+        run: make build-all VERSION=${{ github.event.release.tag_name }}
+
       - name: Generate and upload checksums
-        if: matrix.target == 'linux-amd64'
         run: |
-          gh release download ${{ github.event.release.tag_name }} --dir dist --pattern "*" || true
           cd dist
           sha256sum cernopendata-client-* > checksums.txt
-          gh release upload ${{ github.event.release.tag_name }} checksums.txt --clobber
+          gh release upload ${{ github.event.release.tag_name }} checksums.txt
         env:
           GH_TOKEN: ${{ github.token }}
