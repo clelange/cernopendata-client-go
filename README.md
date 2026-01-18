@@ -97,7 +97,7 @@ Each command uses unique flag shorthands to avoid conflicts:
 
 ```bash
 # Clone the repository
-git clone https://github.com/cernopendata/cernopendata-client-go.git
+git clone https://github.com/clelange/cernopendata-client-go.git
 cd cernopendata-client-go
 
 # Build the binary

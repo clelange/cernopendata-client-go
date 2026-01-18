@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/cernopendata/cernopendata-client-go/internal/printer"
+	"github.com/clelange/cernopendata-client-go/internal/printer"
 	"go-hep.org/x/hep/xrootd"
 	"go-hep.org/x/hep/xrootd/xrdio"
 )

@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/cernopendata/cernopendata-client-go/internal/checksum"
-	"github.com/cernopendata/cernopendata-client-go/internal/printer"
+	"github.com/clelange/cernopendata-client-go/internal/checksum"
+	"github.com/clelange/cernopendata-client-go/internal/printer"
 )
 
 type VerificationResult struct {

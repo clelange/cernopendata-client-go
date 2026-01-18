@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/cernopendata/cernopendata-client-go/internal/config"
+	"github.com/clelange/cernopendata-client-go/internal/config"
 	"go-hep.org/x/hep/xrootd"
 	"go-hep.org/x/hep/xrootd/xrdio"
 )

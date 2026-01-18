@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/cernopendata/cernopendata-client-go/internal/config"
+	"github.com/clelange/cernopendata-client-go/internal/config"
 )
 
 type RecordResponse struct {

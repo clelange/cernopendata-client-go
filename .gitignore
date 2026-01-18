@@ -6,8 +6,8 @@
 *.dylib
 bin/
 dist/
-cernopendata-go
 cernopendata-client
+!/cmd/cernopendata-client/
 
 # Test binary, built with `go test -c`
 *.test
