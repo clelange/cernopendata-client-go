@@ -5,7 +5,9 @@
 *.so
 *.dylib
 bin/
+dist/
 cernopendata-go
+cernopendata-client
 
 # Test binary, built with `go test -c`
 *.test
