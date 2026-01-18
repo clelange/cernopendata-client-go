@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/clelange/cernopendata-client-go/compare/v0.1.1...v0.1.2) (2026-01-18)
+
+
+### Bug Fixes
+
+* build and upload only specific binary per matrix job to avoid conflicts ([1ac3d33](https://github.com/clelange/cernopendata-client-go/commit/1ac3d33b3e75e3632a8415ce9a47205b893d25d1))
+
 ## [0.1.1](https://github.com/clelange/cernopendata-client-go/compare/v0.1.0...v0.1.1) (2026-01-18)
 
 
