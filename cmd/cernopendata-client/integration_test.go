@@ -653,7 +653,9 @@ func TestIntegrationDownloadFilesFromRecid(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-name", "*.py")
+	tmpDir := t.TempDir()
+
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-name", "*.py", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf(" download failed: %v\nOutput: %s", err, string(output))
@@ -664,8 +666,8 @@ func TestIntegrationDownloadFilesFromRecid(t *testing.T) {
 		t.Error("Expected 'Success!' message in output")
 	}
 
-	if _, err := os.Stat("3005/0d0714743f0204ed3c0144941e6ce248.configFile.py"); os.IsNotExist(err) {
-		t.Error("Expected file to be downloaded to 3005/ directory")
+	if _, err := os.Stat(filepath.Join(tmpDir, "0d0714743f0204ed3c0144941e6ce248.configFile.py")); os.IsNotExist(err) {
+		t.Error("Expected file to be downloaded")
 	}
 }
 
