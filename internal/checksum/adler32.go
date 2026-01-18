@@ -7,7 +7,7 @@ import (
 )
 
 func CalculateChecksum(filePath string) (string, error) {
-	data, err := os.ReadFile(filePath)
+	data, err := os.ReadFile(filePath) // #nosec G304
 	if err != nil {
 		return "", err
 	}

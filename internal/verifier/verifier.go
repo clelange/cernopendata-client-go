@@ -29,9 +29,7 @@ type VerificationStats struct {
 	MissingFiles   int
 }
 
-type Verifier struct {
-	verbose bool
-}
+type Verifier struct{}
 
 func NewVerifier() *Verifier {
 	return &Verifier{}

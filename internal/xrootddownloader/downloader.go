@@ -8,9 +8,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/clelange/cernopendata-client-go/internal/printer"
 	"go-hep.org/x/hep/xrootd"
 	"go-hep.org/x/hep/xrootd/xrdio"
+
+	"github.com/clelange/cernopendata-client-go/internal/printer"
 )
 
 type DownloadStats struct {
@@ -98,21 +99,23 @@ func (d *Downloader) DownloadFile(ctx context.Context, url, destPath string, res
 			printer.DisplayMessage(printer.Note, fmt.Sprintf("Failed to open file: %v", err))
 			continue
 		}
-		defer file.Close(ctx)
+		defer func() {
+			_ = file.Close(ctx)
+		}()
 
-		if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(destPath), 0750); err != nil {
 			return nil, fmt.Errorf("failed to create directory: %w", err)
 		}
 
 		var localFile *os.File
 		if resume && existingSize > 0 {
-			localFile, err = os.OpenFile(destPath, os.O_APPEND|os.O_WRONLY, 0644)
+			localFile, err = os.OpenFile(destPath, os.O_APPEND|os.O_WRONLY, 0600) // #nosec G302 G304
 		} else {
-			localFile, err = os.Create(destPath)
+			localFile, err = os.Create(destPath) // #nosec G304
 		}
 
 		if err != nil {
-			file.Close(ctx)
+			_ = file.Close(ctx)
 			return nil, fmt.Errorf("failed to open local file: %w", err)
 		}
 
@@ -124,7 +127,7 @@ func (d *Downloader) DownloadFile(ctx context.Context, url, destPath string, res
 		for {
 			select {
 			case <-ctx.Done():
-				localFile.Close()
+				_ = localFile.Close()
 				return &FileDownloadResult{
 					URL:     url,
 					Path:    destPath,
@@ -138,10 +141,10 @@ func (d *Downloader) DownloadFile(ctx context.Context, url, destPath string, res
 			n, err := file.ReadAt(buf, totalBytes)
 			if n > 0 {
 				if _, err := localFile.Write(buf[:n]); err != nil {
-					localFile.Close()
+					_ = localFile.Close()
 					lastErr = err
 					printer.DisplayMessage(printer.Note, fmt.Sprintf("Write error: %v", err))
-					continue retryLoop
+					break retryLoop
 				}
 				copied += int64(n)
 				totalBytes += int64(n)
@@ -150,10 +153,10 @@ func (d *Downloader) DownloadFile(ctx context.Context, url, destPath string, res
 				break retryLoop
 			}
 			if err != nil {
-				localFile.Close()
+				_ = localFile.Close()
 				lastErr = err
 				printer.DisplayMessage(printer.Note, fmt.Sprintf("Read error: %v", err))
-				continue retryLoop
+				break retryLoop
 			}
 			if n == 0 {
 				printer.DisplayMessage(printer.Note, "Read returned 0 bytes, assuming EOF")
@@ -161,7 +164,15 @@ func (d *Downloader) DownloadFile(ctx context.Context, url, destPath string, res
 			}
 		}
 
-		localFile.Close()
+		if err := localFile.Close(); err != nil {
+			lastErr = err
+			printer.DisplayMessage(printer.Note, fmt.Sprintf("Close error: %v", err))
+			continue
+		}
+
+		if lastErr != nil {
+			continue
+		}
 
 		if d.verbose {
 			printer.DisplayMessage(printer.Note, fmt.Sprintf("Downloaded %d bytes to %s", copied, destPath))
@@ -194,7 +205,7 @@ func (d *Downloader) DownloadFiles(ctx context.Context, files []interface{}, bas
 	stats := DownloadStats{}
 	stats.TotalFiles = len(files)
 
-	if err := os.MkdirAll(baseDir, 0755); err != nil {
+	if err := os.MkdirAll(baseDir, 0750); err != nil {
 		printer.DisplayMessage(printer.Error, fmt.Sprintf("Failed to create directory %s: %v", baseDir, err))
 		return stats
 	}
@@ -240,7 +251,7 @@ func (d *Downloader) DownloadFiles(ctx context.Context, files []interface{}, bas
 		}
 	}
 
-	printer.DisplayMessage(printer.Info, fmt.Sprintf("\nDownload summary:"))
+	printer.DisplayMessage(printer.Info, "\nDownload summary:")
 	printer.DisplayMessage(printer.Note, fmt.Sprintf("  Total files:     %d", stats.TotalFiles))
 	printer.DisplayMessage(printer.Note, fmt.Sprintf("  Downloaded:     %d", stats.DownloadedFiles))
 	printer.DisplayMessage(printer.Note, fmt.Sprintf("  Skipped:        %d", stats.SkippedFiles))

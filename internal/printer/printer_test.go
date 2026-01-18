@@ -28,11 +28,11 @@ func TestDisplayOutput(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			DisplayOutput(tt.input)
-			w.Close()
+			_ = w.Close()
 			os.Stdout = oldStdout
 
 			var buf bytes.Buffer
-			io.Copy(&buf, r)
+			_, _ = io.Copy(&buf, r)
 			got := buf.String()
 
 			if !strings.Contains(got, tt.want) {
@@ -78,15 +78,15 @@ func TestDisplayMessage(t *testing.T) {
 				DisplayMessage(tt.msgType, tt.message)
 			}
 
-			wOut.Close()
-			wErr.Close()
+			_ = wOut.Close()
+			_ = wErr.Close()
 			os.Stdout = oldStdout
 			os.Stderr = oldStderr
 
 			var bufOut bytes.Buffer
 			var bufErr bytes.Buffer
-			io.Copy(&bufOut, rOut)
-			io.Copy(&bufErr, rErr)
+			_, _ = io.Copy(&bufOut, rOut)
+			_, _ = io.Copy(&bufErr, rErr)
 
 			output := bufOut.String()
 			errOutput := bufErr.String()

@@ -29,7 +29,7 @@ func TestCalculateChecksum(t *testing.T) {
 			tmpDir := t.TempDir()
 			testFile := filepath.Join(tmpDir, "test.txt")
 
-			err := os.WriteFile(testFile, []byte(tt.content), 0644)
+			err := os.WriteFile(testFile, []byte(tt.content), 0600)
 			if err != nil {
 				t.Fatalf("Failed to write test file: %v", err)
 			}
@@ -52,7 +52,7 @@ func TestGetFileSize(t *testing.T) {
 	testFile := filepath.Join(tmpDir, "test.txt")
 
 	testContent := []byte("test content for size check")
-	err := os.WriteFile(testFile, testContent, 0644)
+	err := os.WriteFile(testFile, testContent, 0600)
 	if err != nil {
 		t.Fatalf("Failed to write test file: %v", err)
 	}

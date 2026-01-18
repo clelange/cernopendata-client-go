@@ -11,7 +11,7 @@ func TestVerifyLocalFiles(t *testing.T) {
 	testFile := filepath.Join(testDir, "test.txt")
 
 	content := []byte("test content")
-	if err := os.WriteFile(testFile, content, 0644); err != nil {
+	if err := os.WriteFile(testFile, content, 0600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -36,7 +36,7 @@ func TestVerifyFiles(t *testing.T) {
 	testFile := filepath.Join(testDir, "test.txt")
 
 	content := []byte("test content")
-	if err := os.WriteFile(testFile, content, 0644); err != nil {
+	if err := os.WriteFile(testFile, content, 0600); err != nil {
 		t.Fatal(err)
 	}
 

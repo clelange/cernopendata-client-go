@@ -90,32 +90,32 @@ func (d *Downloader) DownloadFile(url, destPath string, resume bool) (*FileDownl
 
 		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusPartialContent {
 			body, _ := io.ReadAll(resp.Body)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			lastErr = fmt.Errorf("server returned %d: %s", resp.StatusCode, string(body))
 			printer.DisplayMessage(printer.Note, fmt.Sprintf("Server error: %d", resp.StatusCode))
 			continue
 		}
 
-		if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
-			resp.Body.Close()
+		if err := os.MkdirAll(filepath.Dir(destPath), 0750); err != nil {
+			_ = resp.Body.Close()
 			return nil, fmt.Errorf("failed to create directory: %w", err)
 		}
 
 		var file *os.File
 		if resume && existingSize > 0 && resp.StatusCode == http.StatusPartialContent {
-			file, err = os.OpenFile(destPath, os.O_APPEND|os.O_WRONLY, 0644)
+			file, err = os.OpenFile(destPath, os.O_APPEND|os.O_WRONLY, 0600) // #nosec G302 G304
 		} else {
-			file, err = os.Create(destPath)
+			file, err = os.Create(destPath) // #nosec G304
 		}
 
 		if err != nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			return nil, fmt.Errorf("failed to open file: %w", err)
 		}
 
 		written, err := io.Copy(file, resp.Body)
-		file.Close()
-		resp.Body.Close()
+		_ = file.Close()
+		_ = resp.Body.Close()
 
 		if err != nil {
 			lastErr = err
@@ -154,7 +154,7 @@ func (d *Downloader) DownloadFiles(files []interface{}, baseDir string, retry in
 	stats := DownloadStats{}
 	stats.TotalFiles = len(files)
 
-	if err := os.MkdirAll(baseDir, 0755); err != nil {
+	if err := os.MkdirAll(baseDir, 0750); err != nil {
 		printer.DisplayMessage(printer.Error, fmt.Sprintf("Failed to create directory %s: %v", baseDir, err))
 		return stats
 	}
@@ -200,7 +200,7 @@ func (d *Downloader) DownloadFiles(files []interface{}, baseDir string, retry in
 		}
 	}
 
-	printer.DisplayMessage(printer.Info, fmt.Sprintf("\nDownload summary:"))
+	printer.DisplayMessage(printer.Info, "\nDownload summary:")
 	printer.DisplayMessage(printer.Note, fmt.Sprintf("  Total files:     %d", stats.TotalFiles))
 	printer.DisplayMessage(printer.Note, fmt.Sprintf("  Downloaded:     %d", stats.DownloadedFiles))
 	printer.DisplayMessage(printer.Note, fmt.Sprintf("  Skipped:        %d", stats.SkippedFiles))

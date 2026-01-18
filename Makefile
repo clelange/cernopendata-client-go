@@ -19,6 +19,9 @@ test-short:
 build:
 	go build -ldflags "$(LDFLAGS)" -o $(BINARY_NAME) ./cmd/cernopendata-client
 
+lint:
+	golangci-lint run ./...
+
 clean:
 	rm -f $(BINARY_NAME)
 	rm -rf dist/
@@ -36,3 +39,11 @@ build-linux-amd64:
 
 build-linux-arm64:
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags "$(LDFLAGS)" -o dist/$(BINARY_NAME)-linux-arm64 ./cmd/cernopendata-client
+
+# Docker targets (without WebAuthn by default for smaller image)
+docker-build:
+	docker build -t $(IMAGE_NAME):$(VERSION) -t $(IMAGE_NAME):latest .
+
+docker-push:
+	docker push $(IMAGE_NAME):$(VERSION)
+	docker push $(IMAGE_NAME):latest

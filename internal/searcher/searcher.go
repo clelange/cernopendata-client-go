@@ -97,7 +97,7 @@ func (c *Client) GetRecord(recid int) (*RecordResponse, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get record %d: %w", recid, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("server returned status %d for record %d", resp.StatusCode, recid)
@@ -130,7 +130,7 @@ func (c *Client) getRecordBySearch(field, value string) (*RecordResponse, error)
 	if err != nil {
 		return nil, fmt.Errorf("failed to search for %s: %w", field, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("server returned status %d for search", resp.StatusCode)
@@ -169,9 +169,10 @@ func (c *Client) GetFilesList(record *RecordResponse, protocol string, expand bo
 	for _, file := range record.Metadata.Files {
 		uri := file.URI
 		if strings.HasPrefix(uri, serverRoot) {
-			if protocol == "http" {
+			switch protocol {
+			case "http":
 				uri = strings.Replace(uri, serverRoot, serverURI+"/", 1)
-			} else if protocol == "https" {
+			case "https":
 				uri = strings.Replace(uri, serverRoot, config.ServerHTTPSURI+"/", 1)
 			}
 		}
@@ -187,9 +188,10 @@ func (c *Client) GetFilesList(record *RecordResponse, protocol string, expand bo
 			for _, innerFile := range index.Files {
 				uri := innerFile.URI
 				if strings.HasPrefix(uri, serverRoot) {
-					if protocol == "http" {
+					switch protocol {
+					case "http":
 						uri = strings.Replace(uri, serverRoot, serverURI+"/", 1)
-					} else if protocol == "https" {
+					case "https":
 						uri = strings.Replace(uri, serverRoot, config.ServerHTTPSURI+"/", 1)
 					}
 				}

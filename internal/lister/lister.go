@@ -6,9 +6,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/clelange/cernopendata-client-go/internal/config"
 	"go-hep.org/x/hep/xrootd"
 	"go-hep.org/x/hep/xrootd/xrdio"
+
+	"github.com/clelange/cernopendata-client-go/internal/config"
 )
 
 type FileInfo struct {
@@ -46,7 +47,7 @@ func (l *Lister) ListDirectory(ctx context.Context, path string) ([]FileInfo, er
 	if err != nil {
 		return nil, fmt.Errorf("failed to create XRootD client: %w", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	fs := client.FS()
 
@@ -95,7 +96,7 @@ func (l *Lister) GetFileSize(ctx context.Context, path string) (int64, error) {
 	if err != nil {
 		return 0, fmt.Errorf("failed to create XRootD client: %w", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	fs := client.FS()
 
@@ -118,7 +119,7 @@ func (l *Lister) DirectoryExists(ctx context.Context, path string) (bool, error)
 	if err != nil {
 		return false, fmt.Errorf("failed to create XRootD client: %w", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	fs := client.FS()
 
@@ -145,7 +146,7 @@ func (l *Lister) listDirectoryRecursive(ctx context.Context, path string, base s
 	if err != nil {
 		return nil, fmt.Errorf("failed to create XRootD client: %w", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	fs := client.FS()
 

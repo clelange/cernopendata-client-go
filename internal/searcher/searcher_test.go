@@ -46,7 +46,7 @@ func TestGetRecord(t *testing.T) {
 						DOI:   "10.7483/record/3005",
 					},
 				}
-				json.NewEncoder(w).Encode(resp)
+				_ = json.NewEncoder(w).Encode(resp)
 			},
 			want: &RecordResponse{
 				ID: "3005",
@@ -253,7 +253,7 @@ func TestGetRecordByDOI(t *testing.T) {
 							DOI:   "10.7483/record/3005",
 						},
 					}
-					json.NewEncoder(w).Encode(resp)
+					_ = json.NewEncoder(w).Encode(resp)
 				} else {
 					searchResp := SearchResponse{
 						Hits: SearchHits{
@@ -263,7 +263,7 @@ func TestGetRecordByDOI(t *testing.T) {
 							},
 						},
 					}
-					json.NewEncoder(w).Encode(searchResp)
+					_ = json.NewEncoder(w).Encode(searchResp)
 				}
 			},
 			wantRecid: 3005,
@@ -280,7 +280,7 @@ func TestGetRecordByDOI(t *testing.T) {
 						Hits:  []SearchHit{},
 					},
 				}
-				json.NewEncoder(w).Encode(searchResp)
+				_ = json.NewEncoder(w).Encode(searchResp)
 			},
 			wantRecid: 0,
 			wantErr:   true,
@@ -299,7 +299,7 @@ func TestGetRecordByDOI(t *testing.T) {
 						},
 					},
 				}
-				json.NewEncoder(w).Encode(searchResp)
+				_ = json.NewEncoder(w).Encode(searchResp)
 			},
 			wantRecid: 0,
 			wantErr:   true,
@@ -349,7 +349,7 @@ func TestGetRecordByTitle(t *testing.T) {
 							DOI:   "10.7483/record/3005",
 						},
 					}
-					json.NewEncoder(w).Encode(resp)
+					_ = json.NewEncoder(w).Encode(resp)
 				} else {
 					searchResp := SearchResponse{
 						Hits: SearchHits{
@@ -359,7 +359,7 @@ func TestGetRecordByTitle(t *testing.T) {
 							},
 						},
 					}
-					json.NewEncoder(w).Encode(searchResp)
+					_ = json.NewEncoder(w).Encode(searchResp)
 				}
 			},
 			wantRecid: 3005,
@@ -376,7 +376,7 @@ func TestGetRecordByTitle(t *testing.T) {
 						Hits:  []SearchHit{},
 					},
 				}
-				json.NewEncoder(w).Encode(searchResp)
+				_ = json.NewEncoder(w).Encode(searchResp)
 			},
 			wantRecid: 0,
 			wantErr:   true,

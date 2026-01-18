@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/spf13/cobra"
+
 	"github.com/clelange/cernopendata-client-go/internal/config"
 	"github.com/clelange/cernopendata-client-go/internal/downloader"
 	"github.com/clelange/cernopendata-client-go/internal/lister"
@@ -17,7 +19,6 @@ import (
 	"github.com/clelange/cernopendata-client-go/internal/verifier"
 	"github.com/clelange/cernopendata-client-go/internal/version"
 	"github.com/clelange/cernopendata-client-go/internal/xrootddownloader"
-	"github.com/spf13/cobra"
 )
 
 var buildVersion = "dev"
@@ -366,7 +367,9 @@ Examples:
 		var stats downloader.DownloadStats
 		if downloadEngine == "xrootd" {
 			xrdDownloader := xrootddownloader.NewDownloader()
-			defer xrdDownloader.Close()
+			defer func() {
+				_ = xrdDownloader.Close()
+			}()
 			xrdStats := xrdDownloader.DownloadFiles(cmd.Context(), fileList, outputDir, retryLimit, retrySleep, verbose, dryRun)
 			stats = downloader.DownloadStats{
 				TotalFiles:      xrdStats.TotalFiles,
@@ -494,7 +497,7 @@ Examples:
 			os.Exit(1)
 		}
 
-		printer.DisplayMessage(printer.Info, fmt.Sprintf("\nVerification summary:"))
+		printer.DisplayMessage(printer.Info, "\nVerification summary:")
 		printer.DisplayMessage(printer.Note, fmt.Sprintf("  Total files:     %d", stats.TotalFiles))
 		printer.DisplayMessage(printer.Note, fmt.Sprintf("  Verified:        %d", stats.VerifiedFiles))
 		printer.DisplayMessage(printer.Note, fmt.Sprintf("  Size errors:     %d", stats.SizeFailed))
