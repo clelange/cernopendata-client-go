@@ -1321,16 +1321,9 @@ func TestIntegrationDownloadFilesWithXRootD(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	cmd := exec.CommandContext(ctx, getBinaryPath(), "download-files", "--recid", "3005", "--filter-name", "*.py", "--download-engine", "xrootd", "--output-dir", tmpDir)
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-name", "*.py", "--download-engine", "xrootd", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
-			t.Skip("Skipping XRootD test - timeout (server may be slow or unavailable)")
-			return
-		}
 		t.Logf("Warning: XRootD download failed (XRootD server may be unavailable): %v\nOutput: %s", err, string(output))
 		t.Skip("Skipping XRootD test - server unavailable")
 		return
@@ -1357,10 +1350,7 @@ func TestIntegrationDownloadFilesXRootDError(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	cmd := exec.CommandContext(ctx, getBinaryPath(), "download-files", "--recid", "3005", "--filter-name", "*.py", "--download-engine", "xrootd", "--server", "http://invalid.cern.ch", "--output-dir", tmpDir)
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-name", "*.py", "--download-engine", "xrootd", "--server", "http://invalid.cern.ch", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err == nil {
 		t.Log("Note: Command completed (XRootD error handling worked)")
@@ -1373,9 +1363,5 @@ func TestIntegrationDownloadFilesXRootDError(t *testing.T) {
 
 	if err != nil && len(outputStr) > 0 {
 		t.Log("Got expected error from invalid XRootD server")
-	}
-
-	if ctx.Err() == context.DeadlineExceeded {
-		t.Log("XRootD error handling timed out (acceptable behavior)")
 	}
 }

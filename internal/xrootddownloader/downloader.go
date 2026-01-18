@@ -122,6 +122,19 @@ func (d *Downloader) DownloadFile(ctx context.Context, url, destPath string, res
 
 	retryLoop:
 		for {
+			select {
+			case <-ctx.Done():
+				localFile.Close()
+				return &FileDownloadResult{
+					URL:     url,
+					Path:    destPath,
+					Success: false,
+					Error:   ctx.Err(),
+					Retries: attempt,
+				}, ctx.Err()
+			default:
+			}
+
 			n, err := file.ReadAt(buf, totalBytes)
 			if n > 0 {
 				if _, err := localFile.Write(buf[:n]); err != nil {
@@ -141,6 +154,10 @@ func (d *Downloader) DownloadFile(ctx context.Context, url, destPath string, res
 				lastErr = err
 				printer.DisplayMessage(printer.Note, fmt.Sprintf("Read error: %v", err))
 				continue retryLoop
+			}
+			if n == 0 {
+				printer.DisplayMessage(printer.Note, "Read returned 0 bytes, assuming EOF")
+				break retryLoop
 			}
 		}
 
