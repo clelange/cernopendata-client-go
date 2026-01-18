@@ -208,16 +208,19 @@ No additional system-level XRootD libraries are required - the implementation us
 ### List Directory (XRootD)
 ```bash
 # List XRootD directory
-./cernopendata-client list-directory --path root://eospublic.cern.ch//eos/opendata/cms
+./cernopendata-client list-directory /eos/opendata/cms
 
 # Verbose output (includes size and modification time)
-./cernopendata-client list-directory --path root://eospublic.cern.ch//eos/opendata/cms --verbose
+./cernopendata-client list-directory /eos/opendata/cms --verbose
 
 # List directory recursively
-./cernopendata-client list-directory --path root://eospublic.cern.ch//eos/opendata/cms --recursive
+./cernopendata-client list-directory /eos/opendata/cms --recursive
 
 # List directory with custom timeout (seconds)
-./cernopendata-client list-directory --path root://eospublic.cern.ch//eos/opendata/cms --timeout 60
+./cernopendata-client list-directory /eos/opendata/cms --timeout 60
+
+# Full XRootD URLs are also supported
+./cernopendata-client list-directory root://eospublic.cern.ch//eos/opendata/cms
 ```
 
 ### Shell Completion

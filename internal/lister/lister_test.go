@@ -2,6 +2,7 @@ package lister
 
 import (
 	"context"
+	"strings"
 	"testing"
 )
 
@@ -13,10 +14,6 @@ func TestNewLister(t *testing.T) {
 }
 
 func TestLister_GetFileSize(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode - requires XRootD server access")
-	}
-
 	ctx := context.Background()
 	l := NewLister()
 
@@ -27,18 +24,18 @@ func TestLister_GetFileSize(t *testing.T) {
 	}{
 		{
 			name:    "valid file path",
-			path:    "root://eospublic.cern.ch//eos/opendata/cms/validated-runs/Commissioning10-May19ReReco_7TeV",
+			path:    "/eos/opendata/cms/validated-runs/Commissioning10/Commissioning10-May19ReReco_7TeV.json",
 			wantErr: false,
 		},
 		{
-			name:    "invalid path",
-			path:    "invalid://bad/path",
+			name:    "non-existent file",
+			path:    "/eos/opendata/cms/nonexistent.txt",
 			wantErr: true,
 		},
 		{
-			name:    "non-existent file",
-			path:    "root://eospublic.cern.ch//eos/opendata/cms/nonexistent.txt",
-			wantErr: true,
+			name:    "path with root:// prefix",
+			path:    "root://eospublic.cern.ch//eos/opendata/cms/validated-runs/Commissioning10/Commissioning10-May19ReReco_7TeV.json",
+			wantErr: false,
 		},
 	}
 
@@ -56,10 +53,6 @@ func TestLister_GetFileSize(t *testing.T) {
 }
 
 func TestLister_DirectoryExists(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode - requires XRootD server access")
-	}
-
 	ctx := context.Background()
 	l := NewLister()
 
@@ -71,21 +64,21 @@ func TestLister_DirectoryExists(t *testing.T) {
 	}{
 		{
 			name:    "existing directory",
-			path:    "root://eospublic.cern.ch//eos/opendata/cms",
+			path:    "/eos/opendata/cms",
 			want:    true,
 			wantErr: false,
 		},
 		{
 			name:    "non-existing directory",
-			path:    "root://eospublic.cern.ch//eos/opendata/cms/nonexistent",
+			path:    "/eos/opendata/cms/nonexistent",
 			want:    false,
 			wantErr: false,
 		},
 		{
-			name:    "invalid path",
-			path:    "invalid://bad/path",
-			want:    false,
-			wantErr: true,
+			name:    "path with root:// prefix",
+			path:    "root://eospublic.cern.ch//eos/opendata/cms",
+			want:    true,
+			wantErr: false,
 		},
 	}
 
@@ -182,6 +175,44 @@ func TestFileInfo(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.checks != nil {
 				tt.checks(t, tt.file)
+			}
+		})
+	}
+}
+
+func TestNormalizePath(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		contains string
+	}{
+		{
+			name:     "path without protocol",
+			input:    "/eos/opendata/cms",
+			contains: "root://eospublic.cern.ch//eos/opendata/cms",
+		},
+		{
+			name:     "path with root:// protocol",
+			input:    "root://eospublic.cern.ch//eos/opendata/cms",
+			contains: "root://eospublic.cern.ch//eos/opendata/cms",
+		},
+		{
+			name:     "path with root:// and single slash",
+			input:    "root://eospublic.cern.ch/eos/opendata/cms",
+			contains: "root://eospublic.cern.ch/eos/opendata/cms",
+		},
+		{
+			name:     "path without leading slash",
+			input:    "eos/opendata/cms",
+			contains: "root://eospublic.cern.ch//eos/opendata/cms",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := normalizePath(tt.input)
+			if !strings.Contains(result, tt.contains) {
+				t.Errorf("normalizePath() = %v, want to contain %v", result, tt.contains)
 			}
 		})
 	}

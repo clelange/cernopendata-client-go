@@ -518,7 +518,7 @@ func TestIntegrationListDirectory(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, getBinaryPath(), "list-directory", "root://eospublic.cern.ch//eos/opendata/cms")
+	cmd := exec.CommandContext(ctx, getBinaryPath(), "list-directory", "/eos/opendata/cms")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Logf("Warning: list-directory failed (XRootD service may be unavailable): %v\nOutput: %s", err, string(output))
@@ -538,7 +538,7 @@ func TestIntegrationListDirectoryVerbose(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, getBinaryPath(), "list-directory", "root://eospublic.cern.ch//eos/opendata/cms", "--verbose")
+	cmd := exec.CommandContext(ctx, getBinaryPath(), "list-directory", "/eos/opendata/cms", "--verbose")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Logf("Warning: list-directory verbose failed (XRootD service may be unavailable): %v\nOutput: %s", err, string(output))
@@ -563,7 +563,7 @@ func TestIntegrationListDirectoryWrongPath(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, getBinaryPath(), "list-directory", "root://eospublic.cern.ch//eos/opendata/foobar")
+	cmd := exec.CommandContext(ctx, getBinaryPath(), "list-directory", "/eos/opendata/foobar")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Logf("Warning: list-directory wrong path failed (XRootD service may be unavailable): %v\nOutput: %s", err, string(output))
@@ -583,7 +583,7 @@ func TestIntegrationListDirectoryEmpty(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, getBinaryPath(), "list-directory", "root://eospublic.cern.ch//eos/opendata/test/nonexistent")
+	cmd := exec.CommandContext(ctx, getBinaryPath(), "list-directory", "/eos/opendata/test/nonexistent")
 	output, err := cmd.CombinedOutput()
 	if err == nil && len(output) == 0 {
 		t.Log("Expected empty directory or error")
@@ -1210,7 +1210,7 @@ func TestIntegrationListDirectoryRecursive(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	cmd := exec.Command(getBinaryPath(), "list-directory", "root://eospublic.cern.ch//eos/opendata/cms/software/HiggsExample20112012", "--recursive")
+	cmd := exec.Command(getBinaryPath(), "list-directory", "/eos/opendata/cms/software/HiggsExample20112012", "--recursive")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Logf("Warning: list-directory recursive failed: %v\nOutput: %s", err, string(output))
@@ -1234,12 +1234,17 @@ func TestIntegrationListDirectoryTimeout(t *testing.T) {
 	}
 
 	// Use a very short timeout that should cause context cancellation
-	cmd := exec.Command(getBinaryPath(), "list-directory", "root://eospublic.cern.ch//eos/opendata/cms/software/HiggsExample20112012", "--timeout", "1")
+	cmd := exec.Command(getBinaryPath(), "list-directory", "/eos/opendata/cms/software/HiggsExample20112012", "--timeout", "1")
 	output, err := cmd.CombinedOutput()
 	// The test passes if it completes (either successfully or with timeout error)
-	// We just want to ensure the timeout flag doesn't break the command
+	// We just want to ensure that timeout flag doesn't break the command
 	if err != nil && len(output) == 0 {
 		t.Logf("Note: Command failed with timeout (expected behavior): %v", err)
+	}
+
+	// As long as we got output or a clear error, test passes
+	if len(output) > 0 {
+		t.Logf("Got %d bytes of output before potential timeout", len(output))
 	}
 
 	// As long as we got output or a clear error, the test passes

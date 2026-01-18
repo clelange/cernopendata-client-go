@@ -245,6 +245,7 @@ func FilterFilesByRange(files []interface{}, start, end int) []interface{} {
 	}
 
 	total := len(files)
+
 	if start >= total {
 		return []interface{}{}
 	}
@@ -267,7 +268,14 @@ func FilterFilesByMultipleRanges(files []interface{}, ranges [][2]int) []interfa
 
 	var result []interface{}
 	for _, r := range ranges {
-		filtered := FilterFilesByRange(files, r[0], r[1])
+		start := r[0]
+		end := r[1]
+
+		if start > 0 {
+			start--
+		}
+
+		filtered := FilterFilesByRange(files, start, end)
 		result = append(result, filtered...)
 	}
 

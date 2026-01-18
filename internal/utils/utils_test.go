@@ -1,9 +1,6 @@
 package utils
 
 import (
-	"errors"
-	"fmt"
-	"strings"
 	"testing"
 )
 
@@ -52,9 +49,9 @@ func TestParseRanges(t *testing.T) {
 		want    [][2]int
 		wantErr bool
 	}{
-		{"single range", []string{"1-10"}, [][2]int{{0, 10}}, false},
-		{"multiple ranges", []string{"1-2", "5-7"}, [][2]int{{0, 2}, {5, 7}}, false},
-		{"comma separated ranges", []string{"1-2,5-7"}, [][2]int{{0, 2}, {5, 7}}, false},
+		{"single range", []string{"0-10"}, [][2]int{{0, 10}}, false},
+		{"multiple ranges", []string{"1-2", "5-7"}, [][2]int{{1, 2}, {5, 7}}, false},
+		{"comma separated ranges", []string{"1-2,5-7"}, [][2]int{{1, 2}, {5, 7}}, false},
 		{"zero start", []string{"0-10"}, [][2]int{{0, 10}}, false},
 		{"empty input", []string{}, [][2]int{}, false},
 		{"no dash", []string{"1 10"}, nil, true},

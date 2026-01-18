@@ -30,7 +30,7 @@ go.work
 .DS_Store
 
 # Reference directories (for comparison only)
-cernopendata-client/
+cernopendata-client-python/
 
 # Debug files
 debug

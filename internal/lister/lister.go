@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 
+	"github.com/cernopendata/cernopendata-client-go/internal/config"
 	"go-hep.org/x/hep/xrootd"
 	"go-hep.org/x/hep/xrootd/xrdio"
 )
@@ -23,8 +25,19 @@ func NewLister() *Lister {
 	return &Lister{}
 }
 
+func normalizePath(path string) string {
+	if strings.HasPrefix(path, "root://") {
+		return path
+	}
+
+	fullPath := config.ServerRootURI + path
+
+	return strings.ReplaceAll(fullPath, "///", "//")
+}
+
 func (l *Lister) ListDirectory(ctx context.Context, path string) ([]FileInfo, error) {
-	url, err := xrdio.Parse(path)
+	normalizedPath := normalizePath(path)
+	url, err := xrdio.Parse(normalizedPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse path: %w", err)
 	}
@@ -53,7 +66,7 @@ func (l *Lister) ListDirectory(ctx context.Context, path string) ([]FileInfo, er
 		}, nil
 	}
 
-	ents, err := fs.Dirlist(ctx, path)
+	ents, err := fs.Dirlist(ctx, url.Path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list directory: %w", err)
 	}
@@ -72,7 +85,8 @@ func (l *Lister) ListDirectory(ctx context.Context, path string) ([]FileInfo, er
 }
 
 func (l *Lister) GetFileSize(ctx context.Context, path string) (int64, error) {
-	url, err := xrdio.Parse(path)
+	normalizedPath := normalizePath(path)
+	url, err := xrdio.Parse(normalizedPath)
 	if err != nil {
 		return 0, fmt.Errorf("failed to parse path: %w", err)
 	}
@@ -94,7 +108,8 @@ func (l *Lister) GetFileSize(ctx context.Context, path string) (int64, error) {
 }
 
 func (l *Lister) DirectoryExists(ctx context.Context, path string) (bool, error) {
-	url, err := xrdio.Parse(path)
+	normalizedPath := normalizePath(path)
+	url, err := xrdio.Parse(normalizedPath)
 	if err != nil {
 		return false, fmt.Errorf("failed to parse path: %w", err)
 	}
@@ -120,7 +135,8 @@ func (l *Lister) ListDirectoryRecursive(ctx context.Context, path string) ([]Fil
 }
 
 func (l *Lister) listDirectoryRecursive(ctx context.Context, path string, base string) ([]FileInfo, error) {
-	url, err := xrdio.Parse(path)
+	normalizedPath := normalizePath(path)
+	url, err := xrdio.Parse(normalizedPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse path: %w", err)
 	}
@@ -133,7 +149,7 @@ func (l *Lister) listDirectoryRecursive(ctx context.Context, path string, base s
 
 	fs := client.FS()
 
-	ents, err := fs.Dirlist(ctx, path)
+	ents, err := fs.Dirlist(ctx, url.Path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list directory: %w", err)
 	}
