@@ -1,0 +1,27 @@
+# Git
+.git
+.gitignore
+
+# GitHub
+.github/
+
+# Build artifacts
+dist/
+cernopendata-client
+
+# Test artifacts
+*_test.go
+
+# Documentation (not needed in image)
+README.md
+LICENSE
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Python version
+cernopendata-client-python/

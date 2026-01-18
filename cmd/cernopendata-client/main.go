@@ -20,6 +20,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var buildVersion = "dev"
+
+func init() {
+	if buildVersion != "dev" {
+		version.Version = buildVersion
+	}
+}
+
 func main() {
 	var rootCmd = &cobra.Command{
 		Use:   "cernopendata-client",
