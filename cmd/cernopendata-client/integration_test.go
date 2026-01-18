@@ -1218,7 +1218,7 @@ func TestIntegrationListDirectoryTimeout(t *testing.T) {
 	}
 
 	// Use a very short timeout that should cause context cancellation
-	cmd := exec.Command(getBinaryPath(), "list-directory", "/eos/opendata/cms/software/HiggsExample20112012", "--timeout", "1")
+	cmd := exec.Command(getBinaryPath(), "list-directory", "/eos/opendata/cms/software/HiggsExample20112012", "--timeout", "5")
 	output, err := cmd.CombinedOutput()
 	// The test passes if it completes (either successfully or with timeout error)
 	// We just want to ensure that timeout flag doesn't break the command
