@@ -29,19 +29,20 @@ jobs:
           go-version: '1.25'
           cache: true
 
-      - name: Build binaries
-        run: make build-all VERSION=${{ github.event.release.tag_name }}
+      - name: Build binary
+        run: make build-${{ matrix.target }} VERSION=${{ github.event.release.tag_name }}
 
-      - name: Upload binaries to release
+      - name: Upload binary to release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*
+          files: dist/cernopendata-client-${{ matrix.target }}
 
       - name: Generate and upload checksums
         if: matrix.target == 'linux-amd64'
         run: |
+          gh release download ${{ github.event.release.tag_name }} --dir dist --pattern "*" || true
           cd dist
-          sha256sum * > checksums.txt
+          sha256sum cernopendata-client-* > checksums.txt
           gh release upload ${{ github.event.release.tag_name }} checksums.txt --clobber
         env:
           GH_TOKEN: ${{ github.token }}
