@@ -1,7 +1,7 @@
 BINARY_NAME=cernopendata-client
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 
-LDFLAGS = -X cmd/cernopendata-client/main.buildVersion=$(VERSION)
+LDFLAGS = -X main.buildVersion=$(VERSION)
 
 .PHONY: all test test-integration test-short build clean build-all
 

@@ -11,7 +11,7 @@ RUN go mod download
 COPY . .
 
 # Build
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "-X cmd/cernopendata-client/main.buildVersion=$(git describe --tags --always --dirty 2>/dev/null || echo 'dev')" -o cernopendata-client ./cmd/cernopendata-client
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "-X main.buildVersion=$(git describe --tags --always --dirty 2>/dev/null || echo 'dev')" -o cernopendata-client ./cmd/cernopendata-client
 
 # Runtime stage
 FROM alpine:latest
