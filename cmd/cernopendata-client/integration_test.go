@@ -1053,7 +1053,7 @@ func TestIntegrationDownloadFilesRegexp(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--regexp", ".*\\.py$", "--output-dir", tmpDir)
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-regexp", ".*\\.py$", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Logf("Warning: download failed: %v\nOutput: %s", err, string(output))
@@ -1079,7 +1079,7 @@ func TestIntegrationDownloadFilesRegexpMultiple(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--regexp", "(.*\\.py$|.*\\.txt$)", "--output-dir", tmpDir)
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-regexp", "(.*\\.py$|.*\\.txt$)", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Logf("Warning: download failed: %v\nOutput: %s", err, string(output))
@@ -1099,7 +1099,7 @@ func TestIntegrationDownloadFilesRegexpWrong(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--regexp", "nonexistentfile.*", "--output-dir", tmpDir)
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-regexp", "nonexistentfile.*", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Logf("Warning: download failed: %v\nOutput: %s", err, string(output))
@@ -1166,7 +1166,7 @@ func TestIntegrationDownloadFilesRegexpAndRange(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--regexp", ".*\\.py$", "--filter-range", "0-2", "--output-dir", tmpDir)
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-regexp", ".*\\.py$", "--filter-range", "0-2", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Logf("Warning: download failed: %v\nOutput: %s", err, string(output))
@@ -1189,7 +1189,7 @@ func TestIntegrationDownloadFilesRegexpAndMultipleRanges(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "5500", "--regexp", ".*\\.xml$", "--filter-range", "0-1,3-4", "--output-dir", tmpDir)
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "5500", "--filter-regexp", ".*\\.xml$", "--filter-range", "0-1,3-4", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Logf("Warning: download failed: %v\nOutput: %s", err, string(output))
