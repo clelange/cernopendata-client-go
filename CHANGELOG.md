@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.5](https://github.com/clelange/cernopendata-client-go/compare/v0.1.4...v0.1.5) (2026-01-18)
+
+
+### Bug Fixes
+
+* **build:** correct buildVersion package path in LDFLAGS ([44e7d85](https://github.com/clelange/cernopendata-client-go/commit/44e7d8537a3cb903c81b5f311987c674689c6221))
+* **tests:** increase timeout in TestIntegrationListDirectoryTimeout to avoid hanging ([1fe1783](https://github.com/clelange/cernopendata-client-go/commit/1fe1783bede686c2f7f189fbfabdad3916c64c27))
+
 ## [0.1.4](https://github.com/clelange/cernopendata-client-go/compare/v0.1.3...v0.1.4) (2026-01-18)
 
 
