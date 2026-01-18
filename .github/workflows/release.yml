@@ -32,13 +32,16 @@ jobs:
       - name: Build binaries
         run: make build-all VERSION=${{ github.event.release.tag_name }}
 
-      - name: Generate checksums
-        run: |
-          cd dist
-          sha256sum * > checksums.txt
-        shell: bash
-
       - name: Upload binaries to release
         uses: softprops/action-gh-release@v2
         with:
           files: dist/*
+
+      - name: Generate and upload checksums
+        if: matrix.target == 'linux-amd64'
+        run: |
+          cd dist
+          sha256sum * > checksums.txt
+          gh release upload ${{ github.event.release.tag_name }} checksums.txt --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
