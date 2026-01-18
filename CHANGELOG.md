@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/clelange/cernopendata-client-go/compare/v0.1.3...v0.1.4) (2026-01-18)
+
+
+### Bug Fixes
+
+* download release assets instead of rebuilding for checksums ([dba9df7](https://github.com/clelange/cernopendata-client-go/commit/dba9df78d821a98bc422b24bea22c986f1619fae))
+
 ## [0.1.3](https://github.com/clelange/cernopendata-client-go/compare/v0.1.2...v0.1.3) (2026-01-18)
 
 
