@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/clelange/cernopendata-client-go/compare/v0.1.0...v0.1.1) (2026-01-18)
+
+
+### Bug Fixes
+
+* avoid race condition when uploading checksums by handling in single job ([09efbe8](https://github.com/clelange/cernopendata-client-go/commit/09efbe875c493e1368c3c131860d8763e9f90be1))
+
 ## 0.1.0 (2026-01-18)
 
 
