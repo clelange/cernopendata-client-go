@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/clelange/cernopendata-client-go/compare/v0.2.0...v0.3.0) (2026-01-19)
+
+
+### Features
+
+* add installer script for easy binary installation ([b46b632](https://github.com/clelange/cernopendata-client-go/commit/b46b632f7c0ebe030c33d4398328350b0d2f7977))
+
 ## [0.2.0](https://github.com/clelange/cernopendata-client-go/compare/v0.1.5...v0.2.0) (2026-01-19)
 
 
