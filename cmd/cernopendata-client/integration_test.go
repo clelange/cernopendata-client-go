@@ -1562,3 +1562,39 @@ func TestIntegrationSearchListFacetsWithServer(t *testing.T) {
 		t.Error("Expected non-empty output from --list-facets")
 	}
 }
+
+func TestIntegrationUpdateCheck(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	cmd := exec.Command(getBinaryPath(), "update", "--check")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("Failed to run update --check: %v\nOutput: %s", err, string(output))
+	}
+
+	outputStr := string(output)
+	if !contains(outputStr, "Current version:") {
+		t.Error("Expected 'Current version:' in output")
+	}
+	if !contains(outputStr, "Checking for updates...") {
+		t.Error("Expected 'Checking for updates...' in output")
+	}
+}
+
+func TestIntegrationVersion(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	cmd := exec.Command(getBinaryPath(), "version")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("Failed to run version: %v\nOutput: %s", err, string(output))
+	}
+
+	if len(output) == 0 {
+		t.Error("Expected non-empty output from version")
+	}
+}
