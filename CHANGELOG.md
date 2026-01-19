@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.0](https://github.com/clelange/cernopendata-client-go/compare/v0.1.5...v0.2.0) (2026-01-19)
+
+
+### Features
+
+* **cli:** add search command with flexible query options ([61b708b](https://github.com/clelange/cernopendata-client-go/commit/61b708bd305098b49f784017cbac86fded544db0)), closes [#4](https://github.com/clelange/cernopendata-client-go/issues/4)
+* **searcher:** add SearchRecords and GetFacets methods ([2c6d7c9](https://github.com/clelange/cernopendata-client-go/commit/2c6d7c99c53c337d45972adbc770670c323f0de4))
+* **utils:** add ParseQueryFromURL for URL/query string parsing ([8871414](https://github.com/clelange/cernopendata-client-go/commit/8871414775223902ffb274431763e1292f62bc9e))
+
 ## [0.1.5](https://github.com/clelange/cernopendata-client-go/compare/v0.1.4...v0.1.5) (2026-01-18)
 
 
