@@ -86,6 +86,9 @@ Each command uses unique flag shorthands to avoid conflicts:
 - `bash` - Generate bash completion
 - `zsh` - Generate zsh completion
 
+**update**:
+- `--check` - Only check for updates, don't install
+
 **search**:
 - `-q` `--query` - Full URL or query string from portal
 - `--query-pattern` - Free text search pattern
@@ -106,7 +109,22 @@ Each command uses unique flag shorthands to avoid conflicts:
 - Go 1.24 or later
 - For XRootD support (optional): `go-hep.org/x/hep/xrootd` (automatically downloaded)
 
-### Option 1: One-line install (Recommended)
+### Option 1: Homebrew (macOS/Linux)
+
+The easiest installation method on macOS or Linux:
+
+```bash
+brew tap clelange/particle-physics
+brew install cernopendata-client
+```
+
+To update:
+
+```bash
+brew upgrade cernopendata-client
+```
+
+### Option 2: One-line install script (Recommended)
 
 The fastest way to install on Linux or macOS:
 
@@ -116,12 +134,12 @@ The fastest way to install on Linux or macOS:
 
 This script will:
 - Detect your OS and architecture
-- Download the latest release binary
-- Verify the checksum
+- Download latest release binary
+- Verify checksum
 - Install to `/usr/local/bin`, `~/bin`, or `~/.local/bin` (based on permissions)
 - Automatically configure your PATH if needed
 
-### Option 2: Building from Source
+### Option 3: Building from Source
 
 ```bash
 # Clone the repository
@@ -147,6 +165,23 @@ No additional system-level XRootD libraries are required - the implementation us
 ```bash
 ./cernopendata-client version
 ```
+
+### Update
+```bash
+# Check for updates
+./cernopendata-client update --check
+
+# Install updates
+./cernopendata-client update
+```
+
+**Note:** If you installed via Homebrew, use `brew upgrade cernopendata-client-go` instead.
+
+The update command will:
+- Check for the latest version on GitHub
+- Download the appropriate binary for your platform
+- Verify the SHA256 checksum
+- Replace the current binary
 
 ### Get Metadata
 ```bash
