@@ -86,6 +86,19 @@ Each command uses unique flag shorthands to avoid conflicts:
 - `bash` - Generate bash completion
 - `zsh` - Generate zsh completion
 
+**search**:
+- `-q` `--query` - Full URL or query string from portal
+- `--query-pattern` - Free text search pattern
+- `-f` `--query-facet` - Facet filter (key=value, repeatable)
+- `-o` `--output-value` - Extract specific metadata field
+- `--filter` - Filter array results
+- `-m` `--format` - Output format (pretty|json)
+- `-s` `--server` - Server URI
+- `-p` `--page` - Page number (default: 1)
+- `--size` - Page size (default: 10, -1 for all)
+- `--sort` - Sort order
+- `--list-facets` - List available facets for filtering
+
 ## Installation
 
 ### Requirements
@@ -237,6 +250,41 @@ echo "fpath=(~/.zsh/completions \$fpath)" >> ~/.zshrc
 echo "autoload -U compinit && compinit" >> ~/.zshrc
 ```
 
+### Search Records
+```bash
+# Basic search
+./cernopendata-client search --query-pattern "Higgs"
+
+# Search with facet filter
+./cernopendata-client search --query-pattern "muon" --query-facet experiment=CMS
+
+# Multiple facets
+./cernopendata-client search --query-pattern "electron" --query-facet experiment=CMS --query-facet type=Dataset
+
+# Copy-paste URL from portal
+./cernopendata-client search --query "q=online&f=experiment%3ACMS"
+
+# Extract specific field from results
+./cernopendata-client search --query-pattern "Higgs" --output-value title
+
+# JSON output format
+./cernopendata-client search --query-pattern "Higgs" --output-value title --format json
+
+# Fetch all results (batched)
+./cernopendata-client search --query-pattern "/TT*" --query-facet experiment=CMS --size -1
+
+# Custom page size
+./cernopendata-client search --query-pattern "muon" --size 50
+
+# Advanced search syntax (see https://opendata.cern.ch/docs/cod-search-tips)
+./cernopendata-client search --query-pattern "title.tokens:*muon*"
+./cernopendata-client search --query-pattern "doi:10.7483*"
+./cernopendata-client search --query-pattern "heavy ion -electron"
+
+# Discover available facets
+./cernopendata-client search --list-facets
+```
+
 ## Development
 
 ### Running Tests
@@ -333,6 +381,14 @@ internal/
   - Recursive listing with `--recursive` flag
   - Configurable timeout with `--timeout` flag
   - **Complete**: 6/6 tests passing (100%)
+- [x] **search** - Search CERN Open Data records
+  - Free text search with `--query-pattern`
+  - URL/query string parsing with `--query`
+  - Flexible facet filtering with `--query-facet`
+  - Field extraction with `--output-value`
+  - Batch fetching all results with `--size -1`
+  - Shows total hits count
+  - **Complete**: 8/8 integration tests passing (100%)
 - [x] **completion** - Shell completion scripts
   - Bash completion generation
   - Zsh completion generation
