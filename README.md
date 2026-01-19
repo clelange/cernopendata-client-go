@@ -106,7 +106,22 @@ Each command uses unique flag shorthands to avoid conflicts:
 - Go 1.24 or later
 - For XRootD support (optional): `go-hep.org/x/hep/xrootd` (automatically downloaded)
 
-### Building from Source
+### Option 1: One-line install (Recommended)
+
+The fastest way to install on Linux or macOS:
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/clelange/cernopendata-client-go/main/scripts/install.sh)"
+```
+
+This script will:
+- Detect your OS and architecture
+- Download the latest release binary
+- Verify the checksum
+- Install to `/usr/local/bin`, `~/bin`, or `~/.local/bin` (based on permissions)
+- Automatically configure your PATH if needed
+
+### Option 2: Building from Source
 
 ```bash
 # Clone the repository
