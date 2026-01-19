@@ -83,3 +83,145 @@ func TestParseRanges(t *testing.T) {
 		})
 	}
 }
+
+func TestParseQueryFromURL(t *testing.T) {
+	tests := []struct {
+		name       string
+		input      string
+		wantQ      string
+		wantFacets map[string]string
+		wantPage   *int
+		wantSize   *int
+		wantSort   string
+		wantErr    bool
+	}{
+		{
+			name:       "empty input",
+			input:      "",
+			wantQ:      "",
+			wantFacets: map[string]string{},
+			wantErr:    false,
+		},
+		{
+			name:       "simple query",
+			input:      "q=Higgs",
+			wantQ:      "Higgs",
+			wantFacets: map[string]string{},
+			wantErr:    false,
+		},
+		{
+			name:       "query with facet",
+			input:      "q=muon&f=experiment:CMS",
+			wantQ:      "muon",
+			wantFacets: map[string]string{"experiment": "CMS"},
+			wantErr:    false,
+		},
+		{
+			name:       "multiple facets",
+			input:      "q=test&f=experiment:CMS&f=type:Dataset",
+			wantQ:      "test",
+			wantFacets: map[string]string{"experiment": "CMS", "type": "Dataset"},
+			wantErr:    false,
+		},
+		{
+			name:       "full URL",
+			input:      "https://opendata.cern.ch/search?q=Higgs&f=experiment:ATLAS",
+			wantQ:      "Higgs",
+			wantFacets: map[string]string{"experiment": "ATLAS"},
+			wantErr:    false,
+		},
+		{
+			name:       "URL encoded",
+			input:      "q=heavy%20ion&f=experiment%3ACMS",
+			wantQ:      "heavy ion",
+			wantFacets: map[string]string{"experiment": "CMS"},
+			wantErr:    false,
+		},
+		{
+			name:       "with page parameter",
+			input:      "q=test&page=5",
+			wantQ:      "test",
+			wantFacets: map[string]string{},
+			wantPage:   intPtr(5),
+			wantErr:    false,
+		},
+		{
+			name:       "with size parameter",
+			input:      "q=test&size=20",
+			wantQ:      "test",
+			wantFacets: map[string]string{},
+			wantSize:   intPtr(20),
+			wantErr:    false,
+		},
+		{
+			name:       "with sort parameter",
+			input:      "q=test&sort=mostrecent",
+			wantQ:      "test",
+			wantFacets: map[string]string{},
+			wantSort:   "mostrecent",
+			wantErr:    false,
+		},
+		{
+			name:       "with p parameter (alternate page)",
+			input:      "q=test&p=3",
+			wantQ:      "test",
+			wantFacets: map[string]string{},
+			wantPage:   intPtr(3),
+			wantErr:    false,
+		},
+		{
+			name:       "with s parameter (alternate size)",
+			input:      "q=test&s=50",
+			wantQ:      "test",
+			wantFacets: map[string]string{},
+			wantSize:   intPtr(50),
+			wantErr:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseQueryFromURL(tt.input)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ParseQueryFromURL() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr {
+				return
+			}
+
+			if got.Q != tt.wantQ {
+				t.Errorf("ParseQueryFromURL().Q = %q, want %q", got.Q, tt.wantQ)
+			}
+
+			if len(got.Facets) != len(tt.wantFacets) {
+				t.Errorf("ParseQueryFromURL().Facets has %d items, want %d", len(got.Facets), len(tt.wantFacets))
+			}
+			for k, v := range tt.wantFacets {
+				if got.Facets[k] != v {
+					t.Errorf("ParseQueryFromURL().Facets[%q] = %q, want %q", k, got.Facets[k], v)
+				}
+			}
+
+			if tt.wantPage != nil {
+				if got.Page == nil || *got.Page != *tt.wantPage {
+					t.Errorf("ParseQueryFromURL().Page = %v, want %v", got.Page, *tt.wantPage)
+				}
+			}
+
+			if tt.wantSize != nil {
+				if got.Size == nil || *got.Size != *tt.wantSize {
+					t.Errorf("ParseQueryFromURL().Size = %v, want %v", got.Size, *tt.wantSize)
+				}
+			}
+
+			if got.Sort != tt.wantSort {
+				t.Errorf("ParseQueryFromURL().Sort = %q, want %q", got.Sort, tt.wantSort)
+			}
+		})
+	}
+}
+
+func intPtr(i int) *int {
+	return &i
+}
