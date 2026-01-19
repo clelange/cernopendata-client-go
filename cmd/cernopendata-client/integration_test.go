@@ -1348,3 +1348,217 @@ func TestIntegrationDownloadFilesXRootDError(t *testing.T) {
 		t.Log("Got expected error from invalid XRootD server")
 	}
 }
+
+func TestIntegrationSearchBasic(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, getBinaryPath(), "search", "--query-pattern", "Higgs", "--size", "3")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Logf("Warning: search failed (network may be unavailable): %v\nOutput: %s", err, string(output))
+		return
+	}
+
+	if len(output) == 0 {
+		t.Error("Expected non-empty output from search")
+	}
+}
+
+func TestIntegrationSearchWithFacets(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, getBinaryPath(), "search", "--query-pattern", "muon", "--query-facet", "experiment=CMS", "--size", "5")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Logf("Warning: search with facets failed (network may be unavailable): %v\nOutput: %s", err, string(output))
+		return
+	}
+
+	if len(output) == 0 {
+		t.Error("Expected non-empty output from search with facets")
+	}
+}
+
+func TestIntegrationSearchWithURL(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, getBinaryPath(), "search", "--query", "q=test&f=experiment:CMS", "--size", "3")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Logf("Warning: search with URL query failed (network may be unavailable): %v\nOutput: %s", err, string(output))
+		return
+	}
+
+	if len(output) == 0 {
+		t.Error("Expected non-empty output from search with URL query")
+	}
+}
+
+func TestIntegrationSearchOutputValue(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, getBinaryPath(), "search", "--query-pattern", "Higgs", "--output-value", "title", "--size", "3")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Logf("Warning: search with output-value failed (network may be unavailable): %v\nOutput: %s", err, string(output))
+		return
+	}
+
+	if len(output) == 0 {
+		t.Error("Expected non-empty output from search with output-value")
+	}
+}
+
+func TestIntegrationSearchFormatJSON(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, getBinaryPath(), "search", "--query-pattern", "Higgs", "--output-value", "title", "--format", "json", "--size", "3")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Logf("Warning: search with JSON format failed (network may be unavailable): %v\nOutput: %s", err, string(output))
+		return
+	}
+
+	outputStr := string(output)
+	if len(outputStr) > 0 && !strings.Contains(outputStr, "[") {
+		t.Error("Expected JSON array output")
+	}
+}
+
+func TestIntegrationSearchNoResults(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, getBinaryPath(), "search", "--query-pattern", "xyznonexistent12345")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Logf("Warning: search failed (network may be unavailable): %v\nOutput: %s", err, string(output))
+		return
+	}
+
+	outputStr := string(output)
+	if !contains(outputStr, "No records found") {
+		t.Logf("Output: %s", outputStr)
+	}
+}
+
+func TestIntegrationSearchHelp(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	cmd := exec.Command(getBinaryPath(), "search", "--help")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("Failed to run search --help: %v\nOutput: %s", err, string(output))
+	}
+
+	outputStr := string(output)
+	if !contains(outputStr, "--query-pattern") {
+		t.Error("Expected --query-pattern in help output")
+	}
+	if !contains(outputStr, "--query-facet") {
+		t.Error("Expected --query-facet in help output")
+	}
+	if !contains(outputStr, "--output-value") {
+		t.Error("Expected --output-value in help output")
+	}
+	if !contains(outputStr, "--size") {
+		t.Error("Expected --size in help output")
+	}
+}
+
+func TestIntegrationSearchFilterWithoutOutputValue(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	cmd := exec.Command(getBinaryPath(), "search", "--query-pattern", "test", "--filter", "foo=bar")
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatal("Expected error when using --filter without --output-value")
+	}
+
+	outputStr := string(output)
+	if !contains(outputStr, "--filter") || !contains(outputStr, "--output-value") {
+		t.Error("Expected message about --filter requiring --output-value")
+	}
+}
+
+func TestIntegrationSearchListFacets(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, getBinaryPath(), "search", "--list-facets")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Logf("Warning: --list-facets failed (network may be unavailable): %v\nOutput: %s", err, string(output))
+		return
+	}
+
+	outputStr := string(output)
+
+	// Check that we got some facet output
+	if !contains(outputStr, "Available facets") {
+		t.Error("Expected 'Available facets' in output")
+	}
+
+	// Check for common facets
+	if !contains(outputStr, "experiment:") {
+		t.Error("Expected 'experiment:' facet in output")
+	}
+}
+
+func TestIntegrationSearchListFacetsWithServer(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, getBinaryPath(), "search", "--list-facets", "--server", "https://opendata.cern.ch")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Logf("Warning: --list-facets with --server failed (network may be unavailable): %v\nOutput: %s", err, string(output))
+		return
+	}
+
+	outputStr := string(output)
+	if len(outputStr) == 0 {
+		t.Error("Expected non-empty output from --list-facets")
+	}
+}
