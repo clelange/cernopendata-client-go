@@ -491,3 +491,261 @@ func TestFileInfo(t *testing.T) {
 		})
 	}
 }
+
+func TestSearchRecords(t *testing.T) {
+	tests := []struct {
+		name      string
+		q         string
+		facets    map[string]string
+		page      int
+		size      int
+		sort      string
+		handler   http.HandlerFunc
+		wantTotal int
+		wantLen   int
+		wantErr   bool
+	}{
+		{
+			name:   "basic search",
+			q:      "Higgs",
+			facets: nil,
+			page:   1,
+			size:   10,
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				if !strings.Contains(r.URL.RawQuery, "q=Higgs") {
+					t.Errorf("expected q=Higgs in query, got %s", r.URL.RawQuery)
+				}
+				w.Header().Set("Content-Type", "application/json")
+				resp := SearchResponse{
+					Hits: SearchHits{
+						Total: 5,
+						Hits: []SearchHit{
+							{ID: "1", Metadata: map[string]interface{}{"title": "Higgs Boson"}},
+							{ID: "2", Metadata: map[string]interface{}{"title": "Higgs Search"}},
+						},
+					},
+				}
+				_ = json.NewEncoder(w).Encode(resp)
+			},
+			wantTotal: 5,
+			wantLen:   2,
+			wantErr:   false,
+		},
+		{
+			name:   "search with facets",
+			q:      "muon",
+			facets: map[string]string{"experiment": "CMS"},
+			page:   1,
+			size:   10,
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				if !strings.Contains(r.URL.RawQuery, "f=experiment") {
+					t.Errorf("expected facet in query, got %s", r.URL.RawQuery)
+				}
+				w.Header().Set("Content-Type", "application/json")
+				resp := SearchResponse{
+					Hits: SearchHits{
+						Total: 3,
+						Hits: []SearchHit{
+							{ID: "1", Metadata: map[string]interface{}{"title": "CMS Muon Data"}},
+						},
+					},
+				}
+				_ = json.NewEncoder(w).Encode(resp)
+			},
+			wantTotal: 3,
+			wantLen:   1,
+			wantErr:   false,
+		},
+		{
+			name:   "empty results",
+			q:      "nonexistent",
+			facets: nil,
+			page:   1,
+			size:   10,
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				resp := SearchResponse{
+					Hits: SearchHits{
+						Total: 0,
+						Hits:  []SearchHit{},
+					},
+				}
+				_ = json.NewEncoder(w).Encode(resp)
+			},
+			wantTotal: 0,
+			wantLen:   0,
+			wantErr:   false,
+		},
+		{
+			name:   "server error",
+			q:      "test",
+			facets: nil,
+			page:   1,
+			size:   10,
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusInternalServerError)
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(tt.handler)
+			defer server.Close()
+
+			client := NewClient(server.URL)
+			resp, err := client.SearchRecords(tt.q, tt.facets, tt.page, tt.size, tt.sort)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("SearchRecords() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr {
+				if resp.Hits.Total != tt.wantTotal {
+					t.Errorf("SearchRecords() total = %d, want %d", resp.Hits.Total, tt.wantTotal)
+				}
+				if len(resp.Hits.Hits) != tt.wantLen {
+					t.Errorf("SearchRecords() hits = %d, want %d", len(resp.Hits.Hits), tt.wantLen)
+				}
+			}
+		})
+	}
+}
+
+func TestGetFacets(t *testing.T) {
+	tests := []struct {
+		name        string
+		handler     http.HandlerFunc
+		wantFacets  int
+		wantBuckets map[string]int
+		wantErr     bool
+	}{
+		{
+			name: "successful facets fetch",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				resp := map[string]interface{}{
+					"hits": map[string]interface{}{
+						"total": 100,
+						"hits":  []interface{}{},
+					},
+					"aggregations": map[string]interface{}{
+						"experiment": map[string]interface{}{
+							"buckets": []interface{}{
+								map[string]interface{}{"key": "CMS", "doc_count": 50},
+								map[string]interface{}{"key": "ATLAS", "doc_count": 30},
+							},
+						},
+						"type": map[string]interface{}{
+							"buckets": []interface{}{
+								map[string]interface{}{"key": "Dataset", "doc_count": 80},
+							},
+						},
+					},
+				}
+				_ = json.NewEncoder(w).Encode(resp)
+			},
+			wantFacets:  2,
+			wantBuckets: map[string]int{"experiment": 2, "type": 1},
+			wantErr:     false,
+		},
+		{
+			name: "empty aggregations",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				resp := map[string]interface{}{
+					"hits": map[string]interface{}{
+						"total": 0,
+						"hits":  []interface{}{},
+					},
+					"aggregations": map[string]interface{}{},
+				}
+				_ = json.NewEncoder(w).Encode(resp)
+			},
+			wantFacets: 0,
+			wantErr:    false,
+		},
+		{
+			name: "server error",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusInternalServerError)
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(tt.handler)
+			defer server.Close()
+
+			client := NewClient(server.URL)
+			facets, err := client.GetFacets()
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetFacets() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr {
+				if len(facets) != tt.wantFacets {
+					t.Errorf("GetFacets() returned %d facets, want %d", len(facets), tt.wantFacets)
+				}
+
+				for name, expectedBuckets := range tt.wantBuckets {
+					if agg, ok := facets[name]; ok {
+						if len(agg.Buckets) != expectedBuckets {
+							t.Errorf("GetFacets()[%s] has %d buckets, want %d", name, len(agg.Buckets), expectedBuckets)
+						}
+					} else {
+						t.Errorf("GetFacets() missing expected facet: %s", name)
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestSearchRecordsWithAggregations(t *testing.T) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"hits": map[string]interface{}{
+				"total": 5,
+				"hits": []interface{}{
+					map[string]interface{}{"id": "1", "metadata": map[string]interface{}{"title": "Test"}},
+				},
+			},
+			"aggregations": map[string]interface{}{
+				"experiment": map[string]interface{}{
+					"buckets": []interface{}{
+						map[string]interface{}{"key": "CMS", "doc_count": 5},
+					},
+				},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(handler))
+	defer server.Close()
+
+	client := NewClient(server.URL)
+	resp, err := client.SearchRecords("test", nil, 1, 10, "")
+
+	if err != nil {
+		t.Fatalf("SearchRecords() error = %v", err)
+	}
+
+	if resp.Aggregations == nil {
+		t.Error("SearchRecords() Aggregations is nil")
+	}
+
+	if agg, ok := resp.Aggregations["experiment"]; !ok {
+		t.Error("SearchRecords() missing experiment aggregation")
+	} else if len(agg.Buckets) != 1 {
+		t.Errorf("SearchRecords() experiment has %d buckets, want 1", len(agg.Buckets))
+	}
+}

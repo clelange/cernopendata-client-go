@@ -67,7 +67,19 @@ type InnerFileInfo struct {
 }
 
 type SearchResponse struct {
-	Hits SearchHits `json:"hits"`
+	Hits         SearchHits             `json:"hits"`
+	Aggregations map[string]Aggregation `json:"aggregations"`
+}
+
+// Aggregation represents a facet with its buckets of values
+type Aggregation struct {
+	Buckets []AggregationBucket `json:"buckets"`
+}
+
+// AggregationBucket represents a single facet value with its count
+type AggregationBucket struct {
+	Key      interface{} `json:"key"`
+	DocCount int         `json:"doc_count"`
 }
 
 type SearchHits struct {
@@ -76,7 +88,8 @@ type SearchHits struct {
 }
 
 type SearchHit struct {
-	ID string `json:"id"`
+	ID       string                 `json:"id"`
+	Metadata map[string]interface{} `json:"metadata"`
 }
 
 type Client struct {
@@ -245,4 +258,89 @@ func GetRecid(server, doi string, title string, recid int) (int, error) {
 	}
 
 	return 0, fmt.Errorf("please provide recid, doi, or title")
+}
+
+// SearchRecords searches for records using a query string and optional facets.
+// page and size control pagination, sort controls ordering.
+// Returns records with metadata included.
+func (c *Client) SearchRecords(q string, facets map[string]string, page, size int, sort string) (*SearchResponse, error) {
+	params := url.Values{}
+	if q != "" {
+		params.Set("q", q)
+	}
+	for key, value := range facets {
+		params.Add("f", fmt.Sprintf("%s:%s", key, value))
+	}
+	params.Set("page", strconv.Itoa(page))
+	params.Set("size", strconv.Itoa(size))
+	if sort != "" {
+		params.Set("sort", sort)
+	}
+	params.Set("skip_files", "1")
+
+	searchURL := fmt.Sprintf("%s/api/records/?%s", c.server, params.Encode())
+
+	resp, err := c.client.Get(searchURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to search records: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("server returned status %d for search", resp.StatusCode)
+	}
+
+	var searchResp SearchResponse
+	if err := json.NewDecoder(resp.Body).Decode(&searchResp); err != nil {
+		return nil, fmt.Errorf("failed to decode search response: %w", err)
+	}
+
+	return &searchResp, nil
+}
+
+// SearchAllRecords fetches all matching records by paginating through results
+// in batches of 50. Returns a combined SearchResponse with all hits.
+func (c *Client) SearchAllRecords(q string, facets map[string]string, sort string) (*SearchResponse, error) {
+	const batchSize = 50
+	var allHits []SearchHit
+	page := 1
+	totalRecords := 0
+
+	for {
+		resp, err := c.SearchRecords(q, facets, page, batchSize, sort)
+		if err != nil {
+			return nil, err
+		}
+
+		if page == 1 {
+			totalRecords = resp.Hits.Total
+		}
+
+		allHits = append(allHits, resp.Hits.Hits...)
+
+		// Check if we've fetched all records
+		if len(allHits) >= totalRecords {
+			break
+		}
+
+		page++
+	}
+
+	return &SearchResponse{
+		Hits: SearchHits{
+			Total: totalRecords,
+			Hits:  allHits,
+		},
+	}, nil
+}
+
+// GetFacets fetches available facets (aggregations) from the API.
+// This makes a minimal search request to get the aggregation data.
+func (c *Client) GetFacets() (map[string]Aggregation, error) {
+	// Make a minimal search to get aggregations
+	resp, err := c.SearchRecords("", nil, 1, 1, "")
+	if err != nil {
+		return nil, err
+	}
+	return resp.Aggregations, nil
 }
