@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.4.0](https://github.com/clelange/cernopendata-client-go/compare/v0.3.0...v0.4.0) (2026-01-19)
+
+
+### Features
+
+* **cli:** add update command with --check flag ([0379cb8](https://github.com/clelange/cernopendata-client-go/commit/0379cb8ef4e05e82e8f4b9679210548dcd90709f))
+* **updater:** add self-update functionality with GitHub API ([78ce5df](https://github.com/clelange/cernopendata-client-go/commit/78ce5df90df8029789824c0d10966e673a7919e2))
+
+
+### Bug Fixes
+
+* remove duplicate TestIntegrationVersion function ([4235183](https://github.com/clelange/cernopendata-client-go/commit/42351830836533344410ec3217da296f5e5e3e0a))
+
 ## [0.3.0](https://github.com/clelange/cernopendata-client-go/compare/v0.2.0...v0.3.0) (2026-01-19)
 
 
