@@ -1,6 +1,10 @@
 package downloader
 
 import (
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/clelange/cernopendata-client-go/internal/utils"
@@ -254,5 +258,271 @@ func TestFilterFilesByRangeWithFilteredFiles(t *testing.T) {
 		if !expectedFiles[uri] {
 			t.Errorf("Unexpected file: %s", uri)
 		}
+	}
+}
+
+func TestDownloadFile(t *testing.T) {
+	tests := []struct {
+		name       string
+		handler    http.HandlerFunc
+		resume     bool
+		wantErr    bool
+		wantSize   int64
+		wantStatus bool
+	}{
+		{
+			name: "successful download",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte("test file content"))
+			},
+			resume:     false,
+			wantErr:    false,
+			wantSize:   17,
+			wantStatus: true,
+		},
+		{
+			name: "server error 404",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusNotFound)
+				_, _ = w.Write([]byte("not found"))
+			},
+			resume:     false,
+			wantErr:    true,
+			wantStatus: false,
+		},
+		{
+			name: "server error 500",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusInternalServerError)
+				_, _ = w.Write([]byte("internal error"))
+			},
+			resume:     false,
+			wantErr:    true,
+			wantStatus: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(tt.handler)
+			defer server.Close()
+
+			tmpDir := t.TempDir()
+			destPath := filepath.Join(tmpDir, "testfile.txt")
+
+			d := &Downloader{
+				client:     server.Client(),
+				retryLimit: 1,
+				retrySleep: 0,
+			}
+
+			result, err := d.DownloadFile(server.URL+"/testfile.txt", destPath, tt.resume)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("DownloadFile() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if result.Success != tt.wantStatus {
+				t.Errorf("DownloadFile() success = %v, want %v", result.Success, tt.wantStatus)
+			}
+
+			if tt.wantStatus && result.Size != tt.wantSize {
+				t.Errorf("DownloadFile() size = %d, want %d", result.Size, tt.wantSize)
+			}
+		})
+	}
+}
+
+func TestDownloadFileResume(t *testing.T) {
+	// Server that supports range requests
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		rangeHeader := r.Header.Get("Range")
+		if rangeHeader != "" {
+			// Simulate partial content response
+			w.WriteHeader(http.StatusPartialContent)
+			_, _ = w.Write([]byte("resumed content"))
+		} else {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("full content"))
+		}
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(handler))
+	defer server.Close()
+
+	tmpDir := t.TempDir()
+	destPath := filepath.Join(tmpDir, "testfile.txt")
+
+	// Create a partial file
+	if err := os.WriteFile(destPath, []byte("partial"), 0600); err != nil {
+		t.Fatalf("Failed to create partial file: %v", err)
+	}
+
+	d := &Downloader{
+		client:     server.Client(),
+		retryLimit: 1,
+		retrySleep: 0,
+	}
+
+	result, err := d.DownloadFile(server.URL+"/testfile.txt", destPath, true)
+	if err != nil {
+		t.Fatalf("DownloadFile() error = %v", err)
+	}
+
+	if !result.Success {
+		t.Error("DownloadFile() expected success")
+	}
+}
+
+func TestDownloadFiles(t *testing.T) {
+	downloadCount := 0
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		downloadCount++
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("file content"))
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(handler))
+	defer server.Close()
+
+	files := []interface{}{
+		map[string]interface{}{
+			"uri":      server.URL + "/file1.txt",
+			"size":     float64(12),
+			"checksum": "adler32:12345678",
+		},
+		map[string]interface{}{
+			"uri":      server.URL + "/file2.txt",
+			"size":     float64(12),
+			"checksum": "adler32:87654321",
+		},
+	}
+
+	tmpDir := t.TempDir()
+
+	d := &Downloader{
+		client:     server.Client(),
+		retryLimit: 1,
+		retrySleep: 0,
+	}
+
+	stats := d.DownloadFiles(files, tmpDir, 1, 0, false, false)
+
+	if stats.TotalFiles != 2 {
+		t.Errorf("TotalFiles = %d, want 2", stats.TotalFiles)
+	}
+
+	if stats.DownloadedFiles != 2 {
+		t.Errorf("DownloadedFiles = %d, want 2", stats.DownloadedFiles)
+	}
+
+	if stats.FailedFiles != 0 {
+		t.Errorf("FailedFiles = %d, want 0", stats.FailedFiles)
+	}
+}
+
+func TestDownloadFilesDryRun(t *testing.T) {
+	downloadCount := 0
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		downloadCount++
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("file content"))
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(handler))
+	defer server.Close()
+
+	files := []interface{}{
+		map[string]interface{}{
+			"uri":      server.URL + "/file1.txt",
+			"size":     float64(100),
+			"checksum": "adler32:12345678",
+		},
+	}
+
+	tmpDir := t.TempDir()
+
+	d := &Downloader{
+		client:     server.Client(),
+		retryLimit: 1,
+		retrySleep: 0,
+	}
+
+	stats := d.DownloadFiles(files, tmpDir, 1, 0, false, true) // dry-run = true
+
+	if downloadCount != 0 {
+		t.Errorf("Expected no actual downloads in dry-run mode, but got %d", downloadCount)
+	}
+
+	if stats.DownloadedFiles != 1 {
+		t.Errorf("DownloadedFiles = %d, want 1 (simulated)", stats.DownloadedFiles)
+	}
+}
+
+func TestDownloadFilesSkipExisting(t *testing.T) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("new content"))
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(handler))
+	defer server.Close()
+
+	tmpDir := t.TempDir()
+
+	// Pre-create a file
+	existingFile := filepath.Join(tmpDir, "file1.txt")
+	if err := os.WriteFile(existingFile, []byte("existing"), 0600); err != nil {
+		t.Fatalf("Failed to create existing file: %v", err)
+	}
+
+	files := []interface{}{
+		map[string]interface{}{
+			"uri":      server.URL + "/file1.txt",
+			"size":     float64(100),
+			"checksum": "adler32:12345678",
+		},
+	}
+
+	d := &Downloader{
+		client:     server.Client(),
+		retryLimit: 1,
+		retrySleep: 0,
+	}
+
+	stats := d.DownloadFiles(files, tmpDir, 1, 0, false, false)
+
+	if stats.SkippedFiles != 1 {
+		t.Errorf("SkippedFiles = %d, want 1", stats.SkippedFiles)
+	}
+
+	if stats.DownloadedFiles != 0 {
+		t.Errorf("DownloadedFiles = %d, want 0", stats.DownloadedFiles)
+	}
+
+	// Verify original content wasn't overwritten
+	content, _ := os.ReadFile(existingFile) // #nosec G304 -- test file path
+	if string(content) != "existing" {
+		t.Errorf("Existing file was overwritten: got %q", string(content))
+	}
+}
+
+func TestDownloadFilesInvalidEntry(t *testing.T) {
+	files := []interface{}{
+		"not a map", // invalid entry
+		map[string]interface{}{
+			"uri":  "http://example.com/file.txt",
+			"size": float64(100),
+		},
+	}
+
+	tmpDir := t.TempDir()
+
+	d := NewDownloader()
+	stats := d.DownloadFiles(files, tmpDir, 1, 0, false, true) // dry-run to avoid network
+
+	if stats.SkippedFiles != 1 {
+		t.Errorf("SkippedFiles = %d, want 1 (for invalid entry)", stats.SkippedFiles)
 	}
 }
