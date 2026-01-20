@@ -145,3 +145,17 @@ func ParseRanges(input []string) ([][2]int, error) {
 
 	return ranges, nil
 }
+
+// FormatBytes formats a byte size into a human-readable string (e.g. 10.5 MB)
+func FormatBytes(bytes float64) string {
+	const unit = 1024
+	if bytes < unit {
+		return fmt.Sprintf("%.0f B", bytes)
+	}
+	div, exp := int64(unit), 0
+	for n := bytes / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB", bytes/float64(div), "KMGTPE"[exp])
+}

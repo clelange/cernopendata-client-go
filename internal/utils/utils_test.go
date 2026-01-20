@@ -225,3 +225,26 @@ func TestParseQueryFromURL(t *testing.T) {
 func intPtr(i int) *int {
 	return &i
 }
+
+func TestFormatBytes(t *testing.T) {
+	tests := []struct {
+		name  string
+		bytes float64
+		want  string
+	}{
+		{"bytes", 500, "500 B"},
+		{"kilobytes", 1024, "1.0 KB"},
+		{"kilobytes fraction", 1536, "1.5 KB"},
+		{"megabytes", 1024 * 1024, "1.0 MB"},
+		{"gigabytes", 1024 * 1024 * 1024, "1.0 GB"},
+		{"terabytes", 1024 * 1024 * 1024 * 1024, "1.0 TB"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := FormatBytes(tt.bytes); got != tt.want {
+				t.Errorf("FormatBytes() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
