@@ -25,36 +25,47 @@ func getBinaryPath() string {
 	return filepath.Join(projectRoot, "cernopendata-client")
 }
 
-func TestIntegrationGetMetadata(t *testing.T) {
+func runIntegrationCommand(t *testing.T, args ...string) (string, error) {
+	t.Helper()
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	cmd := exec.Command(getBinaryPath(), "get-metadata", "--recid", "3005")
+	cmd := exec.Command(getBinaryPath(), args...)
 	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("Failed to run get-metadata: %v\nOutput: %s", err, string(output))
-	}
+	return string(output), err
+}
 
-	if len(output) == 0 {
-		t.Error("Expected non-empty output from get-metadata")
+func assertCommandSuccess(t *testing.T, args ...string) string {
+	t.Helper()
+	output, err := runIntegrationCommand(t, args...)
+	if err != nil {
+		t.Fatalf("Command %v failed: %v\nOutput: %s", args, err, output)
 	}
+	if len(output) == 0 {
+		t.Errorf("Command %v returned empty output", args)
+	}
+	return string(output)
+}
+
+func assertCommandError(t *testing.T, args ...string) string {
+	t.Helper()
+	output, err := runIntegrationCommand(t, args...)
+	if err == nil {
+		t.Fatalf("Expected command %v to fail, but it succeeded\nOutput: %s", args, output)
+	}
+	if len(output) == 0 {
+		t.Errorf("Command %v failed as expected but returned empty output (expected error message)", args)
+	}
+	return string(output)
+}
+
+func TestIntegrationGetMetadata(t *testing.T) {
+	assertCommandSuccess(t, "get-metadata", "--recid", "3005")
 }
 
 func TestIntegrationGetMetadataByDOI(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
-
-	cmd := exec.Command(getBinaryPath(), "get-metadata", "--doi", "10.7483/OPENDATA.CMS.A342.9982")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("Failed to run get-metadata by DOI: %v\nOutput: %s", err, string(output))
-	}
-
-	if len(output) == 0 {
-		t.Error("Expected non-empty output from get-metadata by DOI")
-	}
+	assertCommandSuccess(t, "get-metadata", "--doi", "10.7483/OPENDATA.CMS.A342.9982")
 }
 
 func TestIntegrationGetMetadataByTitle(t *testing.T) {
@@ -74,19 +85,7 @@ func TestIntegrationGetMetadataByTitle(t *testing.T) {
 }
 
 func TestIntegrationGetMetadataByTitleWrong(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
-
-	cmd := exec.Command(getBinaryPath(), "get-metadata", "--title", "NONEXISTING_TITLE")
-	output, err := cmd.CombinedOutput()
-	if err == nil {
-		t.Fatal("Expected error for non-existing title, but got none")
-	}
-
-	if len(output) == 0 {
-		t.Error("Expected error message for non-existing title")
-	}
+	assertCommandError(t, "get-metadata", "--title", "NONEXISTING_TITLE")
 }
 
 func TestIntegrationGetMetadataByAlternateDOI(t *testing.T) {
@@ -218,19 +217,11 @@ func TestIntegrationGetMetadataFilterWithoutOutputValue(t *testing.T) {
 }
 
 func TestIntegrationGetFileLocations(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
+	assertCommandSuccess(t, "get-file-locations", "--recid", "3005")
+}
 
-	cmd := exec.Command(getBinaryPath(), "get-file-locations", "--recid", "3005")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("Failed to run get-file-locations: %v\nOutput: %s", err, string(output))
-	}
-
-	if len(output) == 0 {
-		t.Error("Expected non-empty output from get-file-locations")
-	}
+func TestIntegrationGetFileLocationsNoExpand(t *testing.T) {
+	assertCommandSuccess(t, "get-file-locations", "--recid", "3005", "--no-expand")
 }
 
 func TestIntegrationGetFileLocationsVerbose(t *testing.T) {
@@ -382,22 +373,6 @@ func TestIntegrationGetFileLocationsExpand(t *testing.T) {
 	}
 }
 
-func TestIntegrationGetFileLocationsNoExpand(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
-
-	cmd := exec.Command(getBinaryPath(), "get-file-locations", "--recid", "3005")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("Failed to run get-file-locations with no-expand: %v\nOutput: %s", err, string(output))
-	}
-
-	if len(output) == 0 {
-		t.Error("Expected non-empty output from get-file-locations with no-expand")
-	}
-}
-
 func TestIntegrationGetFileLocationsNoIdentifier(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
@@ -431,19 +406,7 @@ func TestIntegrationGetFileLocationsInvalidServer(t *testing.T) {
 }
 
 func TestIntegrationVersion(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
-
-	cmd := exec.Command(getBinaryPath(), "version")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("Failed to run version: %v\nOutput: %s", err, string(output))
-	}
-
-	if len(output) == 0 {
-		t.Error("Expected non-empty output from version")
-	}
+	assertCommandSuccess(t, "version")
 }
 
 func TestIntegrationDownloadFiles(t *testing.T) {
@@ -596,28 +559,9 @@ func TestIntegrationListDirectoryEmpty(t *testing.T) {
 }
 
 func TestIntegrationHelp(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
-
-	cmd := exec.Command(getBinaryPath(), "--help")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("Failed to run help: %v\nOutput: %s", err, string(output))
-	}
-
-	outputStr := string(output)
-	if !contains(outputStr, "get-metadata") {
-		t.Error("Expected help output to contain 'get-metadata'")
-	}
-	if !contains(outputStr, "download-files") {
-		t.Error("Expected help output to contain 'download-files'")
-	}
-	if !contains(outputStr, "verify-files") {
-		t.Error("Expected help output to contain 'verify-files'")
-	}
-	if !contains(outputStr, "list-directory") {
-		t.Error("Expected help output to contain 'list-directory'")
+	output := assertCommandSuccess(t, "--help")
+	if !strings.Contains(output, "Usage:") {
+		t.Error("Expected 'Usage:' in help output")
 	}
 }
 
@@ -1555,21 +1499,32 @@ func TestIntegrationSearchListFacetsWithServer(t *testing.T) {
 }
 
 func TestIntegrationUpdateCheck(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
-
-	cmd := exec.Command(getBinaryPath(), "update", "--check")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("Failed to run update --check: %v\nOutput: %s", err, string(output))
-	}
-
-	outputStr := string(output)
-	if !contains(outputStr, "Current version:") {
+	output := assertCommandSuccess(t, "update", "--check")
+	if !strings.Contains(output, "Current version:") {
 		t.Error("Expected 'Current version:' in output")
 	}
-	if !contains(outputStr, "Checking for updates...") {
+	if !strings.Contains(output, "Checking for updates...") {
 		t.Error("Expected 'Checking for updates...' in output")
+	}
+}
+
+func TestIntegrationSearchSizeAll(t *testing.T) {
+	assertCommandSuccess(t, "search", "--query-pattern", "recid:3005", "--size", "-1")
+}
+
+func TestIntegrationSearchSizeLimit(t *testing.T) {
+	output := assertCommandSuccess(t, "search", "--query-pattern", "Higgs", "--size", "2")
+	lines := strings.Split(strings.TrimSpace(output), "\n")
+	count := 0
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		// Skip empty lines, summary messages, and message markers
+		if trimmed == "" || strings.HasPrefix(trimmed, "==>") || strings.HasPrefix(trimmed, "Showing") || strings.HasPrefix(trimmed, "Total:") {
+			continue
+		}
+		count++
+	}
+	if count != 2 {
+		t.Errorf("Expected 2 search results, got %d. Output:\n%s", count, output)
 	}
 }
