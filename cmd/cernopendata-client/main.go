@@ -607,6 +607,21 @@ Examples:
 	},
 }
 
+// printEntries formats and prints directory entries based on verbose mode
+func printEntries(entries []lister.FileInfo, verbose bool) {
+	for _, entry := range entries {
+		dirMarker := ""
+		if entry.IsDir {
+			dirMarker = "/"
+		}
+		if verbose {
+			printer.DisplayOutput(fmt.Sprintf("%s\t%d\t%s%s", entry.Name, entry.Size, entry.ModTime, dirMarker))
+		} else {
+			printer.DisplayOutput(fmt.Sprintf("%s%s", entry.Name, dirMarker))
+		}
+	}
+}
+
 var listDirectoryCmd = &cobra.Command{
 	Use:   "list-directory [path]",
 	Short: "List contents of a EOSPUBLIC Open Data directory.",
@@ -643,42 +658,14 @@ Examples:
 				printer.DisplayMessage(printer.Error, fmt.Sprintf("Failed to list directory: %v", err))
 				os.Exit(1)
 			}
-			for _, entry := range entries {
-				if verbose {
-					dirMarker := ""
-					if entry.IsDir {
-						dirMarker = "/"
-					}
-					printer.DisplayOutput(fmt.Sprintf("%s\t%d\t%s%s", entry.Name, entry.Size, entry.ModTime, dirMarker))
-				} else {
-					dirMarker := ""
-					if entry.IsDir {
-						dirMarker = "/"
-					}
-					printer.DisplayOutput(fmt.Sprintf("%s%s", entry.Name, dirMarker))
-				}
-			}
+			printEntries(entries, verbose)
 		} else {
 			entries, err := lister.ListDirectory(ctx, path)
 			if err != nil {
 				printer.DisplayMessage(printer.Error, fmt.Sprintf("Failed to list directory: %v", err))
 				os.Exit(1)
 			}
-			for _, entry := range entries {
-				if verbose {
-					dirMarker := ""
-					if entry.IsDir {
-						dirMarker = "/"
-					}
-					printer.DisplayOutput(fmt.Sprintf("%s\t%d\t%s%s", entry.Name, entry.Size, entry.ModTime, dirMarker))
-				} else {
-					dirMarker := ""
-					if entry.IsDir {
-						dirMarker = "/"
-					}
-					printer.DisplayOutput(fmt.Sprintf("%s%s", entry.Name, dirMarker))
-				}
-			}
+			printEntries(entries, verbose)
 		}
 	},
 }
