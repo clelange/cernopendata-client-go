@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	testRecID = 3005
+	testRecID = "3005"
 )
 
 func getBinaryPath() string {
@@ -31,6 +31,7 @@ func runIntegrationCommand(t *testing.T, args ...string) (string, error) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
+	// #nosec G204
 	cmd := exec.Command(getBinaryPath(), args...)
 	output, err := cmd.CombinedOutput()
 	return string(output), err
@@ -61,7 +62,7 @@ func assertCommandError(t *testing.T, args ...string) string {
 }
 
 func TestIntegrationGetMetadata(t *testing.T) {
-	assertCommandSuccess(t, "get-metadata", "--recid", "3005")
+	assertCommandSuccess(t, "get-metadata", "--recid", testRecID)
 }
 
 func TestIntegrationGetMetadataByDOI(t *testing.T) {
@@ -73,6 +74,7 @@ func TestIntegrationGetMetadataByTitle(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
+	// #nosec G204
 	cmd := exec.Command(getBinaryPath(), "get-metadata", "--title", "Configuration file for LHE step HIG-Summer11pLHE-00114_1_cfg.py")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -93,6 +95,7 @@ func TestIntegrationGetMetadataByAlternateDOI(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
+	// #nosec G204
 	cmd := exec.Command(getBinaryPath(), "get-metadata", "--doi", "10.7483/OPENDATA.CMS.A342.9982")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -109,6 +112,7 @@ func TestIntegrationGetMetadataOutputValueBasic(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
+	// #nosec G204
 	cmd := exec.Command(getBinaryPath(), "get-metadata", "--recid", "1", "--output-value", "system_details.global_tag")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -125,6 +129,7 @@ func TestIntegrationGetMetadataOutputValueArray(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
+	// #nosec G204
 	cmd := exec.Command(getBinaryPath(), "get-metadata", "--recid", "1", "--output-value", "usage.links")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -141,6 +146,7 @@ func TestIntegrationGetMetadataOutputValueNested(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
+	// #nosec G204
 	cmd := exec.Command(getBinaryPath(), "get-metadata", "--recid", "1", "--output-value", "usage.links.url")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -157,6 +163,7 @@ func TestIntegrationGetMetadataOutputValueWrong(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
+	// #nosec G204
 	cmd := exec.Command(getBinaryPath(), "get-metadata", "--recid", "1", "--output-value", "title.global_tag")
 	output, err := cmd.CombinedOutput()
 	if err == nil {
@@ -173,6 +180,7 @@ func TestIntegrationGetMetadataNoIdentifier(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
+	// #nosec G204
 	cmd := exec.Command(getBinaryPath(), "get-metadata")
 	output, err := cmd.CombinedOutput()
 	if err == nil {
@@ -189,7 +197,8 @@ func TestIntegrationGetMetadataInvalidServer(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	cmd := exec.Command(getBinaryPath(), "get-metadata", "--recid", "3005", "--server", "ftp://invalid.com")
+	// #nosec G204
+	cmd := exec.Command(getBinaryPath(), "get-metadata", "--recid", testRecID, "--server", "ftp://invalid.com")
 	output, err := cmd.CombinedOutput()
 	if err == nil {
 		t.Fatal("Expected error for invalid server, but got none")
@@ -205,6 +214,7 @@ func TestIntegrationGetMetadataFilterWithoutOutputValue(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
+	// #nosec G204
 	cmd := exec.Command(getBinaryPath(), "get-metadata", "--recid", "1", "--filter", "foo=bar")
 	output, err := cmd.CombinedOutput()
 	if err == nil {
@@ -217,11 +227,11 @@ func TestIntegrationGetMetadataFilterWithoutOutputValue(t *testing.T) {
 }
 
 func TestIntegrationGetFileLocations(t *testing.T) {
-	assertCommandSuccess(t, "get-file-locations", "--recid", "3005")
+	assertCommandSuccess(t, "get-file-locations", "--recid", testRecID)
 }
 
 func TestIntegrationGetFileLocationsNoExpand(t *testing.T) {
-	assertCommandSuccess(t, "get-file-locations", "--recid", "3005", "--no-expand")
+	assertCommandSuccess(t, "get-file-locations", "--recid", testRecID, "--no-expand")
 }
 
 func TestIntegrationGetFileLocationsVerbose(t *testing.T) {
@@ -229,7 +239,8 @@ func TestIntegrationGetFileLocationsVerbose(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	cmd := exec.Command(getBinaryPath(), "get-file-locations", "--recid", "3005", "--verbose")
+	// #nosec G204
+	cmd := exec.Command(getBinaryPath(), "get-file-locations", "--recid", testRecID, "--verbose")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Failed to run get-file-locations with verbose: %v\nOutput: %s", err, string(output))
@@ -250,6 +261,7 @@ func TestIntegrationGetFileLocationsByRecidWrong(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
+	// #nosec G204
 	cmd := exec.Command(getBinaryPath(), "get-file-locations", "--recid", "0")
 	output, err := cmd.CombinedOutput()
 	if err == nil {
@@ -266,6 +278,7 @@ func TestIntegrationGetFileLocationsByDOI(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
+	// #nosec G204
 	cmd := exec.Command(getBinaryPath(), "get-file-locations", "--doi", "10.7483/OPENDATA.CMS.A342.9982")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -282,6 +295,7 @@ func TestIntegrationGetFileLocationsByDOIWrong(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
+	// #nosec G204
 	cmd := exec.Command(getBinaryPath(), "get-file-locations", "--doi", "NONEXISTING")
 	output, err := cmd.CombinedOutput()
 	if err == nil {
@@ -298,6 +312,7 @@ func TestIntegrationGetFileLocationsByTitle(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
+	// #nosec G204
 	cmd := exec.Command(getBinaryPath(), "get-file-locations", "--title", "Configuration file for LHE step HIG-Summer11pLHE-00114_1_cfg.py")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -314,6 +329,7 @@ func TestIntegrationGetFileLocationsByTitleWrong(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
+	// #nosec G204
 	cmd := exec.Command(getBinaryPath(), "get-file-locations", "--title", "NONEXISTING_TITLE")
 	output, err := cmd.CombinedOutput()
 	if err == nil {
@@ -330,7 +346,8 @@ func TestIntegrationGetFileLocationsHTTP(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	cmd := exec.Command(getBinaryPath(), "get-file-locations", "--recid", "3005", "--protocol", "http")
+	// #nosec G204
+	cmd := exec.Command(getBinaryPath(), "get-file-locations", "--recid", testRecID, "--protocol", "http")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Failed to run get-file-locations with http: %v\nOutput: %s", err, string(output))
@@ -346,7 +363,8 @@ func TestIntegrationGetFileLocationsHTTPS(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	cmd := exec.Command(getBinaryPath(), "get-file-locations", "--recid", "3005", "--protocol", "https")
+	// #nosec G204
+	cmd := exec.Command(getBinaryPath(), "get-file-locations", "--recid", testRecID, "--protocol", "https")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Failed to run get-file-locations with https: %v\nOutput: %s", err, string(output))
@@ -362,7 +380,8 @@ func TestIntegrationGetFileLocationsExpand(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	cmd := exec.Command(getBinaryPath(), "get-file-locations", "--recid", "3005", "--expand")
+	// #nosec G204
+	cmd := exec.Command(getBinaryPath(), "get-file-locations", "--recid", testRecID, "--expand")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Failed to run get-file-locations with expand: %v\nOutput: %s", err, string(output))
@@ -378,6 +397,7 @@ func TestIntegrationGetFileLocationsNoIdentifier(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
+	// #nosec G204
 	cmd := exec.Command(getBinaryPath(), "get-file-locations")
 	output, err := cmd.CombinedOutput()
 	if err == nil {
@@ -394,7 +414,8 @@ func TestIntegrationGetFileLocationsInvalidServer(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	cmd := exec.Command(getBinaryPath(), "get-file-locations", "--recid", "3005", "--server", "ftp://invalid.com")
+	// #nosec G204
+	cmd := exec.Command(getBinaryPath(), "get-file-locations", "--recid", testRecID, "--server", "ftp://invalid.com")
 	output, err := cmd.CombinedOutput()
 	if err == nil {
 		t.Fatal("Expected error for invalid server, but got none")
@@ -416,7 +437,8 @@ func TestIntegrationDownloadFiles(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-name", "*.txt", "--output-dir", tmpDir)
+	// #nosec G204
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", testRecID, "--filter-name", "*.txt", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Logf("Warning: download-files failed (expected if no .txt files): %v\nOutput: %s", err, string(output))
@@ -440,6 +462,7 @@ func TestIntegrationDownloadFilesByDOI(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
+	// #nosec G204
 	cmd := exec.Command(getBinaryPath(), "download-files", "--doi", "10.7483/OPENDATA.CMS.W26R.J96R", "--filter-name", "readme.txt", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -462,6 +485,7 @@ func TestIntegrationDownloadFilesByDOIWrong(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
+	// #nosec G204
 	cmd := exec.Command(getBinaryPath(), "download-files", "--doi", "NONEXISTING")
 	output, err := cmd.CombinedOutput()
 	if err == nil {
@@ -481,6 +505,7 @@ func TestIntegrationListDirectory(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	// #nosec G204
 	cmd := exec.CommandContext(ctx, getBinaryPath(), "list-directory", "/eos/opendata/cms")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -501,6 +526,7 @@ func TestIntegrationListDirectoryVerbose(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	// #nosec G204
 	cmd := exec.CommandContext(ctx, getBinaryPath(), "list-directory", "/eos/opendata/cms", "--verbose")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -526,6 +552,7 @@ func TestIntegrationListDirectoryWrongPath(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	// #nosec G204
 	cmd := exec.CommandContext(ctx, getBinaryPath(), "list-directory", "/eos/opendata/foobar")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -546,6 +573,7 @@ func TestIntegrationListDirectoryEmpty(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	// #nosec G204
 	cmd := exec.CommandContext(ctx, getBinaryPath(), "list-directory", "/eos/opendata/test/nonexistent")
 	output, err := cmd.CombinedOutput()
 	if err == nil && len(output) == 0 {
@@ -590,7 +618,8 @@ func TestIntegrationDownloadFilesFromRecid(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-name", "*.py", "--output-dir", tmpDir)
+	// #nosec G204
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", testRecID, "--filter-name", "*.py", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf(" download failed: %v\nOutput: %s", err, string(output))
@@ -611,6 +640,7 @@ func TestIntegrationDownloadFilesFromRecidWrong(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
+	// #nosec G204
 	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "0")
 	output, err := cmd.CombinedOutput()
 	if err == nil {
@@ -629,6 +659,7 @@ func TestIntegrationDownloadFilesFilterName(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
+	// #nosec G204
 	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "5500", "--filter-name", "BuildFile.xml", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -660,6 +691,7 @@ func TestIntegrationDownloadFilesFilterNameWrong(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
+	// #nosec G204
 	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "5500", "--filter-name", "nonexistent.txt", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err == nil {
@@ -679,6 +711,7 @@ func TestIntegrationDownloadFilesFilterRange(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
+	// #nosec G204
 	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "5500", "--filter-range", "0-2", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -698,6 +731,7 @@ func TestIntegrationDownloadFilesFilterRangeInvalid(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
+	// #nosec G204
 	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "5500", "--filter-range", "5-2", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -718,7 +752,8 @@ func TestIntegrationDownloadFilesRetry(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--retry-limit", "2", "--filter-name", "*.py", "--output-dir", tmpDir)
+	// #nosec G204
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", testRecID, "--retry-limit", "2", "--filter-name", "*.py", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf(" download failed: %v\nOutput: %s", err, string(output))
@@ -737,7 +772,8 @@ func TestIntegrationDownloadFilesVerbose(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-name", "*.py", "--verbose", "--output-dir", tmpDir)
+	// #nosec G204
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", testRecID, "--filter-name", "*.py", "--verbose", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf(" download failed: %v\nOutput: %s", err, string(output))
@@ -754,6 +790,7 @@ func TestIntegrationDownloadFilesNoIdentifier(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
+	// #nosec G204
 	cmd := exec.Command(getBinaryPath(), "download-files")
 	output, err := cmd.CombinedOutput()
 	if err == nil {
@@ -771,7 +808,8 @@ func TestIntegrationDownloadFilesInvalidServer(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--server", "ftp://invalid.com", "--dry-run")
+	// #nosec G204
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", testRecID, "--server", "ftp://invalid.com", "--dry-run")
 	output, err := cmd.CombinedOutput()
 	if err == nil {
 		t.Fatal("Expected error for invalid server, but got none")
@@ -790,7 +828,8 @@ func TestIntegrationDownloadFilesCustomOutputDir(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-name", "*.py", "--output-dir", tmpDir)
+	// #nosec G204
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", testRecID, "--filter-name", "*.py", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf(" download failed: %v\nOutput: %s", err, string(output))
@@ -809,13 +848,15 @@ func TestIntegrationVerifyFilesBasic(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	downloadCmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-name", "*.py", "--output-dir", tmpDir)
+	// #nosec G204
+	downloadCmd := exec.Command(getBinaryPath(), "download-files", "--recid", testRecID, "--filter-name", "*.py", "--output-dir", tmpDir)
 	downloadOutput, downloadErr := downloadCmd.CombinedOutput()
 	if downloadErr != nil {
 		t.Fatalf(" download failed: %v\nOutput: %s", downloadErr, string(downloadOutput))
 	}
 
-	cmd := exec.Command(getBinaryPath(), "verify-files", "--recid", "3005", "--input-dir", tmpDir)
+	// #nosec G204
+	cmd := exec.Command(getBinaryPath(), "verify-files", "--recid", testRecID, "--input-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Failed to run verify-files: %v\nOutput: %s", err, string(output))
@@ -840,13 +881,15 @@ func TestIntegrationVerifyFilesByNameFilter(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	downloadCmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-name", "*.py", "--output-dir", tmpDir)
+	// #nosec G204
+	downloadCmd := exec.Command(getBinaryPath(), "download-files", "--recid", testRecID, "--filter-name", "*.py", "--output-dir", tmpDir)
 	downloadOutput, downloadErr := downloadCmd.CombinedOutput()
 	if downloadErr != nil {
 		t.Fatalf(" download failed: %v\nOutput: %s", downloadErr, string(downloadOutput))
 	}
 
-	cmd := exec.Command(getBinaryPath(), "verify-files", "--recid", "3005", "--input-dir", tmpDir, "--filter-name", "*.py")
+	// #nosec G204
+	cmd := exec.Command(getBinaryPath(), "verify-files", "--recid", testRecID, "--input-dir", tmpDir, "--filter-name", "*.py")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Failed to run verify-files with name filter: %v\nOutput: %s", err, string(output))
@@ -863,6 +906,7 @@ func TestIntegrationVerifyFilesNoIdentifier(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
+	// #nosec G204
 	cmd := exec.Command(getBinaryPath(), "verify-files")
 	output, err := cmd.CombinedOutput()
 	if err == nil {
@@ -884,12 +928,14 @@ func TestIntegrationVerifyFilesByDOI(t *testing.T) {
 	// We download all files (not just *.py) to ensure verification can find all expected files
 	tmpDir := t.TempDir()
 
+	// #nosec G204
 	downloadCmd := exec.Command(getBinaryPath(), "download-files", "--recid", "5500", "--output-dir", tmpDir)
 	downloadOutput, downloadErr := downloadCmd.CombinedOutput()
 	if downloadErr != nil {
 		t.Fatalf(" download failed: %v\nOutput: %s", downloadErr, string(downloadOutput))
 	}
 
+	// #nosec G204
 	cmd := exec.Command(getBinaryPath(), "verify-files", "--doi", "10.7483/OPENDATA.CMS.JKB8.RR42", "--input-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -910,12 +956,14 @@ func TestIntegrationVerifyFilesByTitle(t *testing.T) {
 	// Using the partial title "Configuration file for LHE step" will not match
 	tmpDir := t.TempDir()
 
-	downloadCmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-name", "*.py", "--output-dir", tmpDir)
+	// #nosec G204
+	downloadCmd := exec.Command(getBinaryPath(), "download-files", "--recid", testRecID, "--filter-name", "*.py", "--output-dir", tmpDir)
 	downloadOutput, downloadErr := downloadCmd.CombinedOutput()
 	if downloadErr != nil {
 		t.Fatalf(" download failed: %v\nOutput: %s", downloadErr, string(downloadOutput))
 	}
 
+	// #nosec G204
 	cmd := exec.Command(getBinaryPath(), "verify-files", "--title", "Configuration file for LHE step HIG-Summer11pLHE-00114_1_cfg.py", "--input-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -932,7 +980,8 @@ func TestIntegrationVerifyFilesInvalidServer(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	cmd := exec.Command(getBinaryPath(), "verify-files", "--recid", "3005", "--server", "ftp://invalid.com")
+	// #nosec G204
+	cmd := exec.Command(getBinaryPath(), "verify-files", "--recid", testRecID, "--server", "ftp://invalid.com")
 	output, err := cmd.CombinedOutput()
 	if err == nil {
 		t.Fatal("Expected error for invalid server, but got none")
@@ -951,16 +1000,20 @@ func TestIntegrationVerifyFilesCustomInputDir(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	downloadCmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-name", "*.py", "--output-dir", tmpDir)
+	// #nosec G204
+	downloadCmd := exec.Command(getBinaryPath(), "download-files", "--recid", testRecID, "--filter-name", "*.py", "--output-dir", tmpDir)
 	downloadOutput, downloadErr := downloadCmd.CombinedOutput()
 	if downloadErr != nil {
 		t.Fatalf(" download failed: %v\nOutput: %s", downloadErr, string(downloadOutput))
 	}
 
 	customDir := filepath.Join(tmpDir, "subdir")
-	os.MkdirAll(customDir, 0755)
+	if err := os.MkdirAll(customDir, 0750); err != nil {
+		t.Fatalf("Failed to create custom directory: %v", err)
+	}
 
-	cmd := exec.Command(getBinaryPath(), "verify-files", "--recid", "3005", "--input-dir", tmpDir)
+	// #nosec G204
+	cmd := exec.Command(getBinaryPath(), "verify-files", "--recid", testRecID, "--input-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Failed to run verify-files with custom dir: %v\nOutput: %s", err, string(output))
@@ -979,7 +1032,8 @@ func TestIntegrationDownloadFilesRegexp(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-regexp", ".*\\.py$", "--output-dir", tmpDir)
+	// #nosec G204
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", testRecID, "--filter-regexp", ".*\\.py$", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf(" download failed: %v\nOutput: %s", err, string(output))
@@ -1004,7 +1058,8 @@ func TestIntegrationDownloadFilesRegexpMultiple(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-regexp", "(.*\\.py$|.*\\.txt$)", "--output-dir", tmpDir)
+	// #nosec G204
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", testRecID, "--filter-regexp", "(.*\\.py$|.*\\.txt$)", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf(" download failed: %v\nOutput: %s", err, string(output))
@@ -1023,7 +1078,8 @@ func TestIntegrationDownloadFilesRegexpWrong(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-regexp", "nonexistentfile.*", "--output-dir", tmpDir)
+	// #nosec G204
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", testRecID, "--filter-regexp", "nonexistentfile.*", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Logf("Warning: download failed: %v\nOutput: %s", err, string(output))
@@ -1043,7 +1099,8 @@ func TestIntegrationDownloadFilesMultipleNameFilters(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-name", "*.py,*.txt", "--output-dir", tmpDir)
+	// #nosec G204
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", testRecID, "--filter-name", "*.py,*.txt", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf(" download failed: %v\nOutput: %s", err, string(output))
@@ -1069,6 +1126,7 @@ func TestIntegrationDownloadFilesMultipleRanges(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
+	// #nosec G204
 	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "5500", "--filter-range", "0-1,3-4", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -1088,7 +1146,8 @@ func TestIntegrationDownloadFilesRegexpAndRange(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-regexp", ".*\\.py$", "--filter-range", "0-2", "--output-dir", tmpDir)
+	// #nosec G204
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", testRecID, "--filter-regexp", ".*\\.py$", "--filter-range", "0-2", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf(" download failed: %v\nOutput: %s", err, string(output))
@@ -1110,6 +1169,7 @@ func TestIntegrationDownloadFilesRegexpAndMultipleRanges(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
+	// #nosec G204
 	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "5500", "--filter-regexp", ".*\\.xml$", "--filter-range", "0-1,3-4", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -1130,6 +1190,7 @@ func TestIntegrationListDirectoryRecursive(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
+	// #nosec G204
 	cmd := exec.Command(getBinaryPath(), "list-directory", "/eos/opendata/cms/software/HiggsExample20112012", "--recursive")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -1153,6 +1214,7 @@ func TestIntegrationListDirectoryTimeout(t *testing.T) {
 	}
 
 	// Use a very short timeout that should cause context cancellation
+	// #nosec G204
 	cmd := exec.Command(getBinaryPath(), "list-directory", "/eos/opendata/cms/software/HiggsExample20112012", "--timeout", "5")
 	output, err := cmd.CombinedOutput()
 	// The test passes if it completes (either successfully or with timeout error)
@@ -1179,7 +1241,8 @@ func TestIntegrationDownloadFilesWithVerify(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-name", "*.py", "--verify", "--output-dir", tmpDir)
+	// #nosec G204
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", testRecID, "--filter-name", "*.py", "--verify", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Failed to run download-files with verify: %v\nOutput: %s", err, string(output))
@@ -1202,7 +1265,8 @@ func TestIntegrationDownloadFilesWithDownloadEngine(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-name", "*.py", "--download-engine", "http", "--output-dir", tmpDir)
+	// #nosec G204
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", testRecID, "--filter-name", "*.py", "--download-engine", "http", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Failed to run download-files with download-engine: %v\nOutput: %s", err, string(output))
@@ -1221,7 +1285,8 @@ func TestIntegrationDownloadFilesWithRetrySleep(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-name", "*.py", "--retry-sleep", "2", "--output-dir", tmpDir)
+	// #nosec G204
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", testRecID, "--filter-name", "*.py", "--retry-sleep", "2", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Failed to run download-files with retry-sleep: %v\nOutput: %s", err, string(output))
@@ -1240,7 +1305,8 @@ func TestIntegrationDownloadFilesWithXRootD(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-name", "*.py", "--download-engine", "xrootd", "--output-dir", tmpDir)
+	// #nosec G204
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", testRecID, "--filter-name", "*.py", "--download-engine", "xrootd", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf(" XRootD download failed (XRootD server may be unavailable): %v\nOutput: %s", err, string(output))
@@ -1268,7 +1334,8 @@ func TestIntegrationDownloadFilesXRootDError(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", "3005", "--filter-name", "*.py", "--download-engine", "xrootd", "--server", "http://invalid.cern.ch", "--output-dir", tmpDir)
+	// #nosec G204
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", testRecID, "--filter-name", "*.py", "--download-engine", "xrootd", "--server", "http://invalid.cern.ch", "--output-dir", tmpDir)
 	output, err := cmd.CombinedOutput()
 	if err == nil {
 		t.Log("Note: Command completed (XRootD error handling worked)")
@@ -1292,6 +1359,7 @@ func TestIntegrationSearchBasic(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
+	// #nosec G204
 	cmd := exec.CommandContext(ctx, getBinaryPath(), "search", "--query-pattern", "Higgs", "--size", "3")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -1312,6 +1380,7 @@ func TestIntegrationSearchWithFacets(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
+	// #nosec G204
 	cmd := exec.CommandContext(ctx, getBinaryPath(), "search", "--query-pattern", "muon", "--query-facet", "experiment=CMS", "--size", "5")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -1332,6 +1401,7 @@ func TestIntegrationSearchWithURL(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
+	// #nosec G204
 	cmd := exec.CommandContext(ctx, getBinaryPath(), "search", "--query", "q=test&f=experiment:CMS", "--size", "3")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -1352,6 +1422,7 @@ func TestIntegrationSearchOutputValue(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
+	// #nosec G204
 	cmd := exec.CommandContext(ctx, getBinaryPath(), "search", "--query-pattern", "Higgs", "--output-value", "title", "--size", "3")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -1372,6 +1443,7 @@ func TestIntegrationSearchFormatJSON(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
+	// #nosec G204
 	cmd := exec.CommandContext(ctx, getBinaryPath(), "search", "--query-pattern", "Higgs", "--output-value", "title", "--format", "json", "--size", "3")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -1393,6 +1465,7 @@ func TestIntegrationSearchNoResults(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
+	// #nosec G204
 	cmd := exec.CommandContext(ctx, getBinaryPath(), "search", "--query-pattern", "xyznonexistent12345")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -1411,6 +1484,7 @@ func TestIntegrationSearchHelp(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
+	// #nosec G204
 	cmd := exec.Command(getBinaryPath(), "search", "--help")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -1437,6 +1511,7 @@ func TestIntegrationSearchFilterWithoutOutputValue(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
+	// #nosec G204
 	cmd := exec.Command(getBinaryPath(), "search", "--query-pattern", "test", "--filter", "foo=bar")
 	output, err := cmd.CombinedOutput()
 	if err == nil {
@@ -1457,6 +1532,7 @@ func TestIntegrationSearchListFacets(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
+	// #nosec G204
 	cmd := exec.CommandContext(ctx, getBinaryPath(), "search", "--list-facets")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -1485,6 +1561,7 @@ func TestIntegrationSearchListFacetsWithServer(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
+	// #nosec G204
 	cmd := exec.CommandContext(ctx, getBinaryPath(), "search", "--list-facets", "--server", "https://opendata.cern.ch")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -1509,7 +1586,7 @@ func TestIntegrationUpdateCheck(t *testing.T) {
 }
 
 func TestIntegrationSearchSizeAll(t *testing.T) {
-	assertCommandSuccess(t, "search", "--query-pattern", "recid:3005", "--size", "-1")
+	assertCommandSuccess(t, "search", "--query-pattern", "recid:"+testRecID, "--size", "-1")
 }
 
 func TestIntegrationSearchSizeLimit(t *testing.T) {

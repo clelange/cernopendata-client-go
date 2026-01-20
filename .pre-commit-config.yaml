@@ -47,7 +47,7 @@ repos:
     rev: v2.8.0
     hooks:
       - id: golangci-lint
-        args: ['./...', '--timeout=5m']
+        args: ['./...', '--timeout=5m', '--build-tags=integration']
         pass_filenames: false
 
   # Security scanning (local hook - requires gosec installed)
@@ -56,7 +56,7 @@ repos:
       - id: gosec
         name: gosec
         entry: gosec
-        args: ['-exclude=G104', '-quiet', './...']
+        args: ['-exclude=G104', '-quiet', '-tags=integration', './...']
         language: system
         pass_filenames: false
         types: [go]
