@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.5.0](https://github.com/clelange/cernopendata-client-go/compare/v0.4.1...v0.5.0) (2026-01-20)
+
+
+### Features
+
+* **cli:** implement --file-availability flag and enhance UX ([1ece55b](https://github.com/clelange/cernopendata-client-go/commit/1ece55bdc487a331973deccccf4ce92a039708c2))
+* **searcher:** add file availability metadata and filtering ([65b2f73](https://github.com/clelange/cernopendata-client-go/commit/65b2f73f23a3279d2f5be34a416beba2b7b9114d))
+* **utils:** add byte formatting utility ([f4972cc](https://github.com/clelange/cernopendata-client-go/commit/f4972cc0e3bc608797bab2018a9da29cd1f8658f))
+
 ## [0.4.1](https://github.com/clelange/cernopendata-client-go/compare/v0.4.0...v0.4.1) (2026-01-20)
 
 
