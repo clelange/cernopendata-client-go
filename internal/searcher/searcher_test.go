@@ -958,3 +958,77 @@ func TestGetRecidWithTitle(t *testing.T) {
 		t.Errorf("GetRecid() with title = %d, want 1234", recid)
 	}
 }
+
+func TestFilterFilesByAvailability(t *testing.T) {
+	files := []FileInfo{
+		{URI: "file1", Availability: "online"},
+		{URI: "file2", Availability: "on demand"},
+		{URI: "file3", Availability: "online"},
+		{URI: "file4", Availability: ""}, // Should be treated as unknown, but checked for offline
+	}
+
+	tests := []struct {
+		name              string
+		inputFiles        []FileInfo
+		availability      string
+		wantLen           int
+		wantHasOffline    bool
+		wantFilteredFiles []string // URIs
+	}{
+		{
+			name:              "filter online",
+			inputFiles:        files,
+			availability:      "online",
+			wantLen:           2,
+			wantHasOffline:    true,
+			wantFilteredFiles: []string{"file1", "file3"},
+		},
+		{
+			name:              "filter all (explicit)",
+			inputFiles:        files,
+			availability:      "all",
+			wantLen:           4,
+			wantHasOffline:    true,
+			wantFilteredFiles: []string{"file1", "file2", "file3", "file4"},
+		},
+		{
+			name:              "filter empty (default)",
+			inputFiles:        files,
+			availability:      "",
+			wantLen:           4,
+			wantHasOffline:    true,
+			wantFilteredFiles: []string{"file1", "file2", "file3", "file4"},
+		},
+		{
+			name: "all online files",
+			inputFiles: []FileInfo{
+				{URI: "file1", Availability: "online"},
+				{URI: "file2", Availability: "online"},
+			},
+			availability:      "",
+			wantLen:           2,
+			wantHasOffline:    false,
+			wantFilteredFiles: []string{"file1", "file2"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			filtered, hasOffline := FilterFilesByAvailability(tt.inputFiles, tt.availability)
+
+			if len(filtered) != tt.wantLen {
+				t.Errorf("FilterFilesByAvailability() length = %d, want %d", len(filtered), tt.wantLen)
+			}
+
+			if hasOffline != tt.wantHasOffline {
+				t.Errorf("FilterFilesByAvailability() hasOffline = %v, want %v", hasOffline, tt.wantHasOffline)
+			}
+
+			for i, f := range filtered {
+				if f.URI != tt.wantFilteredFiles[i] {
+					t.Errorf("FilterFilesByAvailability() file[%d] = %q, want %q", i, f.URI, tt.wantFilteredFiles[i])
+				}
+			}
+		})
+	}
+}

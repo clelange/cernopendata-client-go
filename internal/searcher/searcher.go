@@ -48,9 +48,10 @@ type UsageLink struct {
 }
 
 type FileInfo struct {
-	URI      string `json:"uri"`
-	Size     int64  `json:"size"`
-	Checksum string `json:"checksum"`
+	URI          string `json:"uri"`
+	Size         int64  `json:"size"`
+	Checksum     string `json:"checksum"`
+	Availability string `json:"availability,omitempty"` // "online" or "on demand"
 }
 
 type FileIndex struct {
@@ -61,9 +62,10 @@ type FileIndex struct {
 }
 
 type InnerFileInfo struct {
-	URI      string `json:"uri"`
-	Size     int64  `json:"size"`
-	Checksum string `json:"checksum"`
+	URI          string `json:"uri"`
+	Size         int64  `json:"size"`
+	Checksum     string `json:"checksum"`
+	Availability string `json:"availability"`
 }
 
 type SearchResponse struct {
@@ -196,9 +198,10 @@ func (c *Client) GetFilesList(record *RecordResponse, protocol string, expand bo
 
 	for _, file := range record.Metadata.Files {
 		files = append(files, FileInfo{
-			URI:      convertURI(file.URI, serverRoot, serverURI, protocol),
-			Size:     file.Size,
-			Checksum: file.Checksum,
+			URI:          convertURI(file.URI, serverRoot, serverURI, protocol),
+			Size:         file.Size,
+			Checksum:     file.Checksum,
+			Availability: "online", // Direct files are always online
 		})
 	}
 
@@ -206,9 +209,10 @@ func (c *Client) GetFilesList(record *RecordResponse, protocol string, expand bo
 		for _, index := range record.Metadata.FileIndices {
 			for _, innerFile := range index.Files {
 				files = append(files, FileInfo{
-					URI:      convertURI(innerFile.URI, serverRoot, serverURI, protocol),
-					Size:     innerFile.Size,
-					Checksum: innerFile.Checksum,
+					URI:          convertURI(innerFile.URI, serverRoot, serverURI, protocol),
+					Size:         innerFile.Size,
+					Checksum:     innerFile.Checksum,
+					Availability: innerFile.Availability,
 				})
 			}
 		}
@@ -229,6 +233,36 @@ func (c *Client) GetFilesList(record *RecordResponse, protocol string, expand bo
 	}
 
 	return files
+}
+
+// FilterFilesByAvailability filters files by their availability status.
+// If availability is empty/nil, returns all files (default behavior).
+// Returns (filtered files, has offline files warning).
+func FilterFilesByAvailability(files []FileInfo, availability string) ([]FileInfo, bool) {
+	hasOfflineFiles := false
+	for _, f := range files {
+		if f.Availability != "" && f.Availability != "online" {
+			hasOfflineFiles = true
+			break
+		}
+	}
+
+	if availability == "" {
+		return files, hasOfflineFiles
+	}
+
+	if availability == "online" {
+		var filtered []FileInfo
+		for _, f := range files {
+			if f.Availability == "online" {
+				filtered = append(filtered, f)
+			}
+		}
+		return filtered, hasOfflineFiles
+	}
+
+	// For "all" or any other value, return all files
+	return files, hasOfflineFiles
 }
 
 func GetRecid(server, doi string, title string, recid int) (int, error) {

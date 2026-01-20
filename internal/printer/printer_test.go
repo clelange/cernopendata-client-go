@@ -58,6 +58,7 @@ func TestDisplayMessage(t *testing.T) {
 		{"info message", Info, "info message", false, false},
 		{"note message", Note, "note message", false, false},
 		{"error message", Error, "error message", false, true},
+		{"warning message", Warning, "warning message", false, true},
 		{"invalid message type", MessageType(999), "message", true, false},
 	}
 
@@ -92,11 +93,19 @@ func TestDisplayMessage(t *testing.T) {
 			errOutput := bufErr.String()
 
 			if tt.checkStd {
-				if !strings.Contains(errOutput, "ERROR") {
-					t.Errorf("DisplayMessage(Error) stderr should contain 'ERROR', got %q", errOutput)
+				// For error and warning messages, check stderr
+				expectedPrefix := ""
+				switch tt.msgType {
+				case Error:
+					expectedPrefix = "ERROR"
+				case Warning:
+					expectedPrefix = "WARNING"
+				}
+				if !strings.Contains(errOutput, expectedPrefix) {
+					t.Errorf("DisplayMessage(%v) stderr should contain '%s', got %q", tt.msgType, expectedPrefix, errOutput)
 				}
 				if !strings.Contains(errOutput, tt.message) {
-					t.Errorf("DisplayMessage(Error) stderr should contain message %q, got %q", tt.message, errOutput)
+					t.Errorf("DisplayMessage(%v) stderr should contain message %q, got %q", tt.msgType, tt.message, errOutput)
 				}
 			} else if !tt.wantErr {
 				if output == "" && errOutput == "" {

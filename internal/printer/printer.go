@@ -12,6 +12,7 @@ const (
 	Note
 	Progress
 	Error
+	Warning
 )
 
 func DisplayMessage(msgType MessageType, message string) {
@@ -22,6 +23,8 @@ func DisplayMessage(msgType MessageType, message string) {
 		_, _ = fmt.Fprintf(os.Stdout, "  -> %s\n", message)
 	case Error:
 		_, _ = fmt.Fprintf(os.Stderr, "==> ERROR: %s\n", message)
+	case Warning:
+		_, _ = fmt.Fprintf(os.Stderr, "==> WARNING: %s\n", message)
 	}
 }
 
