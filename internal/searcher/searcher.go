@@ -173,6 +173,21 @@ func (c *Client) GetRecordByID(id string) (*RecordResponse, error) {
 	return c.GetRecord(recordID)
 }
 
+// convertURI transforms a URI based on protocol settings
+func convertURI(uri, serverRoot, serverURI, protocol string) string {
+	if !strings.HasPrefix(uri, serverRoot) {
+		return uri
+	}
+	switch protocol {
+	case "http":
+		return strings.Replace(uri, serverRoot, serverURI+"/", 1)
+	case "https":
+		return strings.Replace(uri, serverRoot, config.ServerHTTPSURI+"/", 1)
+	default:
+		return uri
+	}
+}
+
 func (c *Client) GetFilesList(record *RecordResponse, protocol string, expand bool) []FileInfo {
 	var files []FileInfo
 
@@ -180,17 +195,8 @@ func (c *Client) GetFilesList(record *RecordResponse, protocol string, expand bo
 	serverURI := c.server
 
 	for _, file := range record.Metadata.Files {
-		uri := file.URI
-		if strings.HasPrefix(uri, serverRoot) {
-			switch protocol {
-			case "http":
-				uri = strings.Replace(uri, serverRoot, serverURI+"/", 1)
-			case "https":
-				uri = strings.Replace(uri, serverRoot, config.ServerHTTPSURI+"/", 1)
-			}
-		}
 		files = append(files, FileInfo{
-			URI:      uri,
+			URI:      convertURI(file.URI, serverRoot, serverURI, protocol),
 			Size:     file.Size,
 			Checksum: file.Checksum,
 		})
@@ -199,17 +205,8 @@ func (c *Client) GetFilesList(record *RecordResponse, protocol string, expand bo
 	if expand {
 		for _, index := range record.Metadata.FileIndices {
 			for _, innerFile := range index.Files {
-				uri := innerFile.URI
-				if strings.HasPrefix(uri, serverRoot) {
-					switch protocol {
-					case "http":
-						uri = strings.Replace(uri, serverRoot, serverURI+"/", 1)
-					case "https":
-						uri = strings.Replace(uri, serverRoot, config.ServerHTTPSURI+"/", 1)
-					}
-				}
 				files = append(files, FileInfo{
-					URI:      uri,
+					URI:      convertURI(innerFile.URI, serverRoot, serverURI, protocol),
 					Size:     innerFile.Size,
 					Checksum: innerFile.Checksum,
 				})
