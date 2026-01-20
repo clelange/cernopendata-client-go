@@ -44,7 +44,8 @@ Each command uses unique flag shorthands to avoid conflicts:
 - `-T` `--title` - Title
 - `-p` `--protocol` - Protocol (http|https)
 - `-e` `--expand` - Expand file indices
-- `-V` `--verbose` - Verbose output
+- `-V` `--verbose` - Verbose output (includes size, checksum, and availability)
+- `--file-availability` - Filter by availability (online|all)
 - `-S` `--server` - Server URI
 
 **download-files**:
@@ -65,6 +66,7 @@ Each command uses unique flag shorthands to avoid conflicts:
 - `-E` `--download-engine` - Download engine (http|xrootd, default: http)
 - `-E` `--expand` - Expand file indices
 - `-p` `--progress` - Show progress indicators
+- `--file-availability` - Filter by availability (online|all, default: skip tape files with warning)
 - `-s` `--server` - Server URI
 
 **verify-files**:
@@ -207,7 +209,7 @@ The update command will:
 # List files
 ./cernopendata-client get-file-locations --recid 5500
 
-# Verbose output (includes size and checksum)
+# Verbose output (includes size, checksum, and availability)
 ./cernopendata-client get-file-locations --recid 5500 --verbose
 
 # Use HTTPS protocol
@@ -215,6 +217,12 @@ The update command will:
 
 # Expand file indices
 ./cernopendata-client get-file-locations --recid 5500 --expand
+
+# Filter by file availability (online files only)
+./cernopendata-client get-file-locations --recid 8886 --file-availability online
+
+# Include all files (online and on tape)
+./cernopendata-client get-file-locations --recid 8886 --file-availability all
 ```
 
 ### Download Files
@@ -254,7 +262,20 @@ The update command will:
 
 # Expand file indices
 ./cernopendata-client download-files --recid 5500 --expand
+
+# Download only online files (skip tape-based files)
+./cernopendata-client download-files --recid 8886 --file-availability online
+
+# Force download all files including those on tape (may fail if not staged)
+./cernopendata-client download-files --recid 8886 --file-availability all
 ```
+
+**File Availability Note**: By default, the client will warn you about files stored on tape and skip them automatically. You'll see:
+- A warning message with a link to request file staging at the CERN Open Data portal
+- A summary showing files downloaded and files skipped (on tape)
+- Total bytes downloaded out of total bytes
+
+Use `--file-availability online` to explicitly filter to online files only, or `--file-availability all` to force attempting to download all files (not recommended unless files have been staged).
 
 ### Verify Files
 ```bash

@@ -57,6 +57,12 @@ Examples:
 		downloadEngine, _ := cmd.Flags().GetString("download-engine")
 		protocol, _ := cmd.Flags().GetString("protocol")
 		server, _ := cmd.Flags().GetString("server")
+		fileAvailability, _ := cmd.Flags().GetString("file-availability")
+
+		if fileAvailability != "" && fileAvailability != "online" && fileAvailability != "all" {
+			printer.DisplayMessage(printer.Error, fmt.Sprintf("Invalid file availability: %s (choose from 'online', 'all')", fileAvailability))
+			os.Exit(1)
+		}
 
 		if cmd.Flags().Changed("expand") && cmd.Flags().Changed("no-expand") {
 			printer.DisplayMessage(printer.Error, "Cannot specify both --expand and --no-expand")
@@ -95,7 +101,39 @@ Examples:
 				protocol = "http"
 			}
 		}
+
 		files := client.GetFilesList(record, protocol, expand)
+		totalFiles := len(files)
+		var totalBytes int64
+		for _, f := range files {
+			totalBytes += f.Size
+		}
+
+		tapeFilesSkipped := 0
+		if expand {
+			// Check if we have offline files
+			hasOfflineFiles := false
+			for _, f := range files {
+				if f.Availability != "" && f.Availability != "online" {
+					hasOfflineFiles = true
+					break
+				}
+			}
+
+			// Apply filtering logic
+			if fileAvailability == "online" {
+				files, _ = searcher.FilterFilesByAvailability(files, "online")
+			} else if fileAvailability == "" && hasOfflineFiles {
+				// Default behavior: warn and skip offline files
+				printer.DisplayMessage(printer.Warning, "Some files are stored on tape and will be skipped.")
+				printer.DisplayMessage(printer.Warning, fmt.Sprintf("Visit https://opendata.cern.ch/record/%d to request file staging.", parsedRecid))
+				printer.DisplayMessage(printer.Warning, "Use '--file-availability all' to force attempting to download all files.")
+				files, _ = searcher.FilterFilesByAvailability(files, "online")
+			}
+			// If "all", we keep everything (user explicitly requested it)
+
+			tapeFilesSkipped = totalFiles - len(files)
+		}
 		var fileList []interface{}
 		for _, file := range files {
 			fileList = append(fileList, map[string]interface{}{
@@ -170,6 +208,15 @@ Examples:
 			printer.DisplayMessage(printer.Info, "Success!")
 		}
 
+		// Print summary statistics
+		printer.DisplayOutput("")
+		printer.DisplayOutput("Summary:")
+		printer.DisplayOutput(fmt.Sprintf("- Files downloaded: %d / %d", stats.DownloadedFiles, totalFiles))
+		if tapeFilesSkipped > 0 {
+			printer.DisplayOutput(fmt.Sprintf("- Files skipped (on tape): %d", tapeFilesSkipped))
+		}
+		printer.DisplayOutput(fmt.Sprintf("- Bytes downloaded: %s / %s", utils.FormatBytes(float64(stats.DownloadedBytes)), utils.FormatBytes(float64(totalBytes))))
+
 		if stats.FailedFiles > 0 {
 			os.Exit(1)
 		}
@@ -195,4 +242,5 @@ func init() {
 	downloadFilesCmd.Flags().String("download-engine", "", "Download engine to use (http|xrootd)")
 	downloadFilesCmd.Flags().StringP("protocol", "p", "", "Protocol to be used in links [http,xrootd]")
 	downloadFilesCmd.Flags().StringP("server", "s", "", "Which CERN Open Data server to query? [default=http://opendata.cern.ch]")
+	downloadFilesCmd.Flags().StringP("file-availability", "", "", "Filter files by their availability status [online, all]")
 }

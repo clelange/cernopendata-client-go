@@ -25,7 +25,9 @@ Examples:
 
      $ cernopendata-client get-file-locations --recid 5500 --protocol xrootd
 
-     $ cernopendata-client get-file-locations --recid 5500 --verbose`,
+     $ cernopendata-client get-file-locations --recid 5500 --verbose
+
+     $ cernopendata-client get-file-locations --recid 8886 --file-availability online`,
 	Run: func(cmd *cobra.Command, args []string) {
 		recid, err := cmd.Flags().GetInt("recid")
 		if err != nil {
@@ -38,7 +40,13 @@ Examples:
 		expand, _ := cmd.Flags().GetBool("expand")
 		noExpand, _ := cmd.Flags().GetBool("no-expand")
 		verbose, _ := cmd.Flags().GetBool("verbose")
+		fileAvailability, _ := cmd.Flags().GetString("file-availability")
 		server, _ := cmd.Flags().GetString("server")
+
+		if fileAvailability != "" && fileAvailability != "online" && fileAvailability != "all" {
+			printer.DisplayMessage(printer.Error, fmt.Sprintf("Invalid file availability: %s (choose from 'online', 'all')", fileAvailability))
+			os.Exit(1)
+		}
 
 		if cmd.Flags().Changed("expand") && cmd.Flags().Changed("no-expand") {
 			printer.DisplayMessage(printer.Error, "Cannot specify both --expand and --no-expand")
@@ -67,9 +75,19 @@ Examples:
 		}
 
 		files := client.GetFilesList(record, protocol, expand)
+
+		if expand {
+			filteredFiles, hasOfflineWarning := searcher.FilterFilesByAvailability(files, fileAvailability)
+			if hasOfflineWarning && fileAvailability == "" {
+				printer.DisplayMessage(printer.Warning, "WARNING: Some files in the list are not online and may not be downloadable.")
+				printer.DisplayMessage(printer.Warning, "To list only online files, use the '--file-availability online' option.")
+			}
+			files = filteredFiles
+		}
+
 		for _, file := range files {
 			if verbose {
-				printer.DisplayOutput(fmt.Sprintf("%s\t%d\t%s", file.URI, file.Size, file.Checksum))
+				printer.DisplayOutput(fmt.Sprintf("%s\t%d\t%s\t%s", file.URI, file.Size, file.Checksum, file.Availability))
 			} else {
 				printer.DisplayOutput(file.URI)
 			}
@@ -84,6 +102,7 @@ func init() {
 	getFileLocationsCmd.Flags().StringP("protocol", "p", "http", "Protocol to be used in links [http,xrootd]")
 	getFileLocationsCmd.Flags().BoolP("expand", "e", true, "Expand file indexes?")
 	getFileLocationsCmd.Flags().Bool("no-expand", false, "Don't expand file indexes")
-	getFileLocationsCmd.Flags().BoolP("verbose", "V", false, "Output also the file size (in the second column) and the file checksum (in the third column)")
+	getFileLocationsCmd.Flags().BoolP("verbose", "V", false, "Output also the file size (2nd), checksum (3rd), and availability (4th)")
+	getFileLocationsCmd.Flags().StringP("file-availability", "", "", "Filter files by their availability status [online, all]")
 	getFileLocationsCmd.Flags().StringP("server", "S", "", "Which CERN Open Data server to query? [default=http://opendata.cern.ch]")
 }

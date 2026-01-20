@@ -15,7 +15,8 @@ import (
 )
 
 const (
-	testRecID = "3005"
+	testRecID            = "3005"
+	testUnavailableRecID = "8886"
 )
 
 func getBinaryPath() string {
@@ -1603,5 +1604,123 @@ func TestIntegrationSearchSizeLimit(t *testing.T) {
 	}
 	if count != 2 {
 		t.Errorf("Expected 2 search results, got %d. Output:\n%s", count, output)
+	}
+}
+
+func TestIntegrationGetFileLocationsAvailabilityOnline(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	// #nosec G204
+	cmd := exec.Command(getBinaryPath(), "get-file-locations", "--recid", testUnavailableRecID, "--file-availability", "online")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("get-file-locations failed: %v\nOutput: %s", err, string(output))
+	}
+
+	outputStr := string(output)
+	lines := strings.Split(strings.TrimSpace(outputStr), "\n")
+	// Should match exactly 1 line (record 8886 has 1 online file)
+	count := 0
+	for _, line := range lines {
+		if strings.TrimSpace(line) != "" && !strings.HasPrefix(line, "==>") {
+			count++
+		}
+	}
+	if count != 1 {
+		t.Errorf("Expected exactly 1 online file, got %d. Output:\n%s", count, outputStr)
+	}
+}
+
+func TestIntegrationGetFileLocationsAvailabilityAll(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	// #nosec G204
+	cmd := exec.Command(getBinaryPath(), "get-file-locations", "--recid", testUnavailableRecID, "--file-availability", "all")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("get-file-locations failed: %v\nOutput: %s", err, string(output))
+	}
+
+	outputStr := string(output)
+	lines := strings.Split(strings.TrimSpace(outputStr), "\n")
+	// Should match 2997 files
+	count := 0
+	for _, line := range lines {
+		if strings.TrimSpace(line) != "" && !strings.HasPrefix(line, "==>") {
+			count++
+		}
+	}
+	if count < 100 {
+		t.Errorf("Expected many files (>100), got %d. Output:\n%s", count, outputStr)
+	}
+}
+
+func TestIntegrationGetFileLocationsAvailabilityWarning(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	// #nosec G204
+	cmd := exec.Command(getBinaryPath(), "get-file-locations", "--recid", testUnavailableRecID)
+	// We expect success (err == nil) but warning in stderr
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("get-file-locations failed: %v\nOutput: %s", err, string(output))
+	}
+
+	outputStr := string(output)
+	// Note: CombinedOutput captures both stdout and stderr
+	if !contains(outputStr, "WARNING: Some files in the list are not online") {
+		t.Error("Expected warning about offline files not found in output")
+	}
+}
+
+func TestIntegrationDownloadFilesAvailabilityOnline(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	tmpDir := t.TempDir()
+
+	// #nosec G204
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", testUnavailableRecID, "--file-availability", "online", "--dry-run", "--output-dir", tmpDir)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("download-files failed: %v\nOutput: %s", err, string(output))
+	}
+
+	outputStr := string(output)
+	if !contains(outputStr, "Files downloaded: 1 /") {
+		t.Error("Expected 'Files downloaded: 1' in summary")
+	}
+	if !contains(outputStr, "Files skipped (on tape)") {
+		t.Error("Expected 'Files skipped (on tape)' in summary")
+	}
+}
+
+func TestIntegrationDownloadFilesAvailabilityWarning(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	tmpDir := t.TempDir()
+
+	// #nosec G204
+	cmd := exec.Command(getBinaryPath(), "download-files", "--recid", testUnavailableRecID, "--dry-run", "--output-dir", tmpDir)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("download-files failed: %v\nOutput: %s", err, string(output))
+	}
+
+	outputStr := string(output)
+	if !contains(outputStr, "WARNING: Some files are stored on tape and will be skipped") {
+		t.Error("Expected warning about skipped files")
+	}
+	if !contains(outputStr, "record/8886") {
+		t.Error("Expected staging guidance link to record 8886")
 	}
 }
