@@ -749,3 +749,212 @@ func TestSearchRecordsWithAggregations(t *testing.T) {
 		t.Errorf("SearchRecords() experiment has %d buckets, want 1", len(agg.Buckets))
 	}
 }
+
+func TestSearchAllRecords(t *testing.T) {
+	tests := []struct {
+		name         string
+		totalRecords int
+		batchSize    int
+		wantPages    int
+		wantTotal    int
+	}{
+		{
+			name:         "single page",
+			totalRecords: 10,
+			batchSize:    50,
+			wantPages:    1,
+			wantTotal:    10,
+		},
+		{
+			name:         "multiple pages",
+			totalRecords: 125,
+			batchSize:    50,
+			wantPages:    3,
+			wantTotal:    125,
+		},
+		{
+			name:         "empty results",
+			totalRecords: 0,
+			batchSize:    50,
+			wantPages:    1,
+			wantTotal:    0,
+		},
+		{
+			name:         "exact batch boundary",
+			totalRecords: 100,
+			batchSize:    50,
+			wantPages:    2,
+			wantTotal:    100,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pageRequests := 0
+			handler := func(w http.ResponseWriter, r *http.Request) {
+				pageRequests++
+				w.Header().Set("Content-Type", "application/json")
+
+				// Calculate how many hits to return for this page
+				startIdx := (pageRequests - 1) * 50
+				remaining := tt.totalRecords - startIdx
+				hitsThisPage := remaining
+				if hitsThisPage > 50 {
+					hitsThisPage = 50
+				}
+				if hitsThisPage < 0 {
+					hitsThisPage = 0
+				}
+
+				hits := make([]interface{}, hitsThisPage)
+				for i := range hits {
+					hits[i] = map[string]interface{}{
+						"id":       string(rune('0' + startIdx + i)),
+						"metadata": map[string]interface{}{"title": "Record"},
+					}
+				}
+
+				resp := map[string]interface{}{
+					"hits": map[string]interface{}{
+						"total": tt.totalRecords,
+						"hits":  hits,
+					},
+				}
+				_ = json.NewEncoder(w).Encode(resp)
+			}
+
+			server := httptest.NewServer(http.HandlerFunc(handler))
+			defer server.Close()
+
+			client := NewClient(server.URL)
+			resp, err := client.SearchAllRecords("test", nil, "")
+
+			if err != nil {
+				t.Fatalf("SearchAllRecords() error = %v", err)
+			}
+
+			if resp.Hits.Total != tt.wantTotal {
+				t.Errorf("SearchAllRecords() total = %d, want %d", resp.Hits.Total, tt.wantTotal)
+			}
+
+			if len(resp.Hits.Hits) != tt.wantTotal {
+				t.Errorf("SearchAllRecords() hits count = %d, want %d", len(resp.Hits.Hits), tt.wantTotal)
+			}
+
+			if pageRequests != tt.wantPages {
+				t.Errorf("SearchAllRecords() made %d page requests, want %d", pageRequests, tt.wantPages)
+			}
+		})
+	}
+}
+
+func TestSearchAllRecordsError(t *testing.T) {
+	requestCount := 0
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		requestCount++
+		if requestCount == 2 {
+			// Fail on second page
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"hits": map[string]interface{}{
+				"total": 100, // Indicates more pages needed
+				"hits": []interface{}{
+					map[string]interface{}{"id": "1"},
+				},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(handler))
+	defer server.Close()
+
+	client := NewClient(server.URL)
+	_, err := client.SearchAllRecords("test", nil, "")
+
+	if err == nil {
+		t.Error("SearchAllRecords() expected error on second page, got nil")
+	}
+}
+
+func TestGetRecidWithDOI(t *testing.T) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if strings.Contains(r.URL.Path, "/api/records/") {
+			// Direct record fetch
+			resp := RecordResponse{
+				ID: "3005",
+				Metadata: RecordMetadata{
+					RecID: 3005,
+					Title: "Test Record",
+					DOI:   "10.7483/OPENDATA.TEST",
+				},
+			}
+			_ = json.NewEncoder(w).Encode(resp)
+		} else {
+			// Search response
+			resp := SearchResponse{
+				Hits: SearchHits{
+					Total: 1,
+					Hits: []SearchHit{
+						{ID: "3005"},
+					},
+				},
+			}
+			_ = json.NewEncoder(w).Encode(resp)
+		}
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(handler))
+	defer server.Close()
+
+	recid, err := GetRecid(server.URL, "10.7483/OPENDATA.TEST", "", 0)
+	if err != nil {
+		t.Fatalf("GetRecid() with DOI error = %v", err)
+	}
+
+	if recid != 3005 {
+		t.Errorf("GetRecid() with DOI = %d, want 3005", recid)
+	}
+}
+
+func TestGetRecidWithTitle(t *testing.T) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if strings.Contains(r.URL.Path, "/api/records/") {
+			resp := RecordResponse{
+				ID: "1234",
+				Metadata: RecordMetadata{
+					RecID: 1234,
+					Title: "My Test Title",
+				},
+			}
+			_ = json.NewEncoder(w).Encode(resp)
+		} else {
+			resp := SearchResponse{
+				Hits: SearchHits{
+					Total: 1,
+					Hits: []SearchHit{
+						{ID: "1234"},
+					},
+				},
+			}
+			_ = json.NewEncoder(w).Encode(resp)
+		}
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(handler))
+	defer server.Close()
+
+	recid, err := GetRecid(server.URL, "", "My Test Title", 0)
+	if err != nil {
+		t.Fatalf("GetRecid() with title error = %v", err)
+	}
+
+	if recid != 1234 {
+		t.Errorf("GetRecid() with title = %d, want 1234", recid)
+	}
+}
