@@ -1,0 +1,89 @@
+package main
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/spf13/cobra"
+
+	"github.com/clelange/cernopendata-client-go/internal/config"
+	"github.com/clelange/cernopendata-client-go/internal/printer"
+	"github.com/clelange/cernopendata-client-go/internal/searcher"
+)
+
+var getFileLocationsCmd = &cobra.Command{
+	Use:   "get-file-locations",
+	Short: "Get a list of data file locations of a record",
+	Long: `Get a list of data file locations of a record.
+
+Select a CERN Open Data bibliographic record by a record ID, a DOI, or a
+title and return the list of data file locations belonging to this record.
+
+Examples:
+
+     $ cernopendata-client get-file-locations --recid 5500
+
+     $ cernopendata-client get-file-locations --recid 5500 --protocol xrootd
+
+     $ cernopendata-client get-file-locations --recid 5500 --verbose`,
+	Run: func(cmd *cobra.Command, args []string) {
+		recid, err := cmd.Flags().GetInt("recid")
+		if err != nil {
+			printer.DisplayMessage(printer.Error, fmt.Sprintf("Invalid recid: %v", err))
+			os.Exit(1)
+		}
+		doi, _ := cmd.Flags().GetString("doi")
+		title, _ := cmd.Flags().GetString("title")
+		protocol, _ := cmd.Flags().GetString("protocol")
+		expand, _ := cmd.Flags().GetBool("expand")
+		noExpand, _ := cmd.Flags().GetBool("no-expand")
+		verbose, _ := cmd.Flags().GetBool("verbose")
+		server, _ := cmd.Flags().GetString("server")
+
+		if cmd.Flags().Changed("expand") && cmd.Flags().Changed("no-expand") {
+			printer.DisplayMessage(printer.Error, "Cannot specify both --expand and --no-expand")
+			os.Exit(1)
+		}
+
+		if noExpand {
+			expand = false
+		}
+
+		if server == "" {
+			server = config.ServerHTTPURI
+		}
+
+		parsedRecid, err := searcher.GetRecid(server, doi, title, recid)
+		if err != nil {
+			printer.DisplayMessage(printer.Error, fmt.Sprintf("Failed to find record: %v", err))
+			os.Exit(1)
+		}
+
+		client := searcher.NewClient(server)
+		record, err := client.GetRecord(parsedRecid)
+		if err != nil {
+			printer.DisplayMessage(printer.Error, fmt.Sprintf("Failed to get record: %v", err))
+			os.Exit(1)
+		}
+
+		files := client.GetFilesList(record, protocol, expand)
+		for _, file := range files {
+			if verbose {
+				printer.DisplayOutput(fmt.Sprintf("%s\t%d\t%s", file.URI, file.Size, file.Checksum))
+			} else {
+				printer.DisplayOutput(file.URI)
+			}
+		}
+	},
+}
+
+func init() {
+	getFileLocationsCmd.Flags().IntP("recid", "i", 0, "Record ID (exact match)")
+	getFileLocationsCmd.Flags().StringP("doi", "D", "", "Digital Object Identifier (exact match)")
+	getFileLocationsCmd.Flags().StringP("title", "T", "", "Record title (exact match, no wildcards)")
+	getFileLocationsCmd.Flags().StringP("protocol", "p", "http", "Protocol to be used in links [http,xrootd]")
+	getFileLocationsCmd.Flags().BoolP("expand", "e", true, "Expand file indexes?")
+	getFileLocationsCmd.Flags().Bool("no-expand", false, "Don't expand file indexes")
+	getFileLocationsCmd.Flags().BoolP("verbose", "V", false, "Output also the file size (in the second column) and the file checksum (in the third column)")
+	getFileLocationsCmd.Flags().StringP("server", "S", "", "Which CERN Open Data server to query? [default=http://opendata.cern.ch]")
+}
