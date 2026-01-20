@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/clelange/cernopendata-client-go/compare/v0.4.0...v0.4.1) (2026-01-20)
+
+
+### Bug Fixes
+
+* resolve integration test linter warnings and update pre-commit config ([9003e42](https://github.com/clelange/cernopendata-client-go/commit/9003e42868f1e6c8b416139f362d593438ed51cb))
+
 ## [0.4.0](https://github.com/clelange/cernopendata-client-go/compare/v0.3.0...v0.4.0) (2026-01-19)
 
 
