@@ -107,17 +107,6 @@ func (d *Downloader) printProgress(filename string, downloaded int64, initial in
 }
 
 func (d *Downloader) DownloadFile(ctx context.Context, url, destPath string, resume bool, expectedSize int64) (*FileDownloadResult, error) {
-	var existingSize int64
-
-	if resume {
-		if fi, err := os.Stat(destPath); err == nil {
-			existingSize = fi.Size()
-			printer.DisplayMessage(printer.Note, fmt.Sprintf("Resuming %s from %d bytes", destPath, existingSize))
-		} else if !os.IsNotExist(err) {
-			return nil, fmt.Errorf("error checking file: %w", err)
-		}
-	}
-
 	parsedURL, err := xrdio.Parse(url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse XRootD URL: %w", err)
@@ -143,6 +132,19 @@ func (d *Downloader) DownloadFile(ctx context.Context, url, destPath string, res
 			time.Sleep(time.Duration(d.retrySleep) * time.Second)
 		}
 
+		// Strict resume: re-check file size on each attempt and resume from the true end.
+		var existingSize int64
+		if resume {
+			if fi, err := os.Stat(destPath); err == nil {
+				existingSize = fi.Size()
+				if existingSize > 0 {
+					printer.DisplayMessage(printer.Note, fmt.Sprintf("Resuming %s from %d bytes", destPath, existingSize))
+				}
+			} else if !os.IsNotExist(err) {
+				return nil, fmt.Errorf("error checking file: %w", err)
+			}
+		}
+
 		var offset int64 = 0
 		if resume && existingSize > 0 {
 			offset = existingSize
@@ -154,11 +156,9 @@ func (d *Downloader) DownloadFile(ctx context.Context, url, destPath string, res
 			printer.DisplayMessage(printer.Note, fmt.Sprintf("Failed to open file: %v", err))
 			continue
 		}
-		defer func() {
-			_ = file.Close(ctx)
-		}()
 
 		if err := os.MkdirAll(filepath.Dir(destPath), 0750); err != nil {
+			_ = file.Close(ctx)
 			return nil, fmt.Errorf("failed to create directory: %w", err)
 		}
 
@@ -187,6 +187,7 @@ func (d *Downloader) DownloadFile(ctx context.Context, url, destPath string, res
 			select {
 			case <-ctx.Done():
 				_ = localFile.Close()
+				_ = file.Close(ctx)
 				return &FileDownloadResult{
 					URL:     url,
 					Path:    destPath,
@@ -200,7 +201,6 @@ func (d *Downloader) DownloadFile(ctx context.Context, url, destPath string, res
 			n, err := file.ReadAt(buf, totalBytes)
 			if n > 0 {
 				if _, err := localFile.Write(buf[:n]); err != nil {
-					_ = localFile.Close()
 					lastErr = err
 					printer.DisplayMessage(printer.Note, fmt.Sprintf("Write error: %v", err))
 					break retryLoop
@@ -218,7 +218,6 @@ func (d *Downloader) DownloadFile(ctx context.Context, url, destPath string, res
 				break retryLoop
 			}
 			if err != nil {
-				_ = localFile.Close()
 				lastErr = err
 				printer.DisplayMessage(printer.Note, fmt.Sprintf("Read error: %v", err))
 				break retryLoop
@@ -230,10 +229,12 @@ func (d *Downloader) DownloadFile(ctx context.Context, url, destPath string, res
 		}
 
 		if err := localFile.Close(); err != nil {
+			_ = file.Close(ctx)
 			lastErr = err
 			printer.DisplayMessage(printer.Note, fmt.Sprintf("Close error: %v", err))
 			continue
 		}
+		_ = file.Close(ctx)
 
 		if lastErr != nil {
 			continue

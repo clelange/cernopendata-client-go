@@ -53,26 +53,6 @@ func NewDownloader() *Downloader {
 }
 
 func (d *Downloader) DownloadFile(url, destPath string, resume bool, expectedSize int64) (*FileDownloadResult, error) {
-	var existingSize int64
-
-	if resume {
-		if fi, err := os.Stat(destPath); err == nil {
-			existingSize = fi.Size()
-			printer.DisplayMessage(printer.Note, fmt.Sprintf("Resuming %s from %d bytes", destPath, existingSize))
-		} else if !os.IsNotExist(err) {
-			return nil, fmt.Errorf("error checking file: %w", err)
-		}
-	}
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	if resume && existingSize > 0 {
-		req.Header.Set("Range", fmt.Sprintf("bytes=%d-", existingSize))
-	}
-
 	var lastErr error
 	var attempt int
 
@@ -80,6 +60,28 @@ func (d *Downloader) DownloadFile(url, destPath string, resume bool, expectedSiz
 		if attempt > 0 {
 			printer.DisplayMessage(printer.Note, fmt.Sprintf("Retry attempt %d/%d after %ds...", attempt+1, d.retryLimit, d.retrySleep))
 			time.Sleep(time.Duration(d.retrySleep) * time.Second)
+		}
+
+		// Strict resume: re-check file size on each attempt and resume from the true end.
+		var existingSize int64
+		if resume {
+			if fi, err := os.Stat(destPath); err == nil {
+				existingSize = fi.Size()
+				if existingSize > 0 {
+					printer.DisplayMessage(printer.Note, fmt.Sprintf("Resuming %s from %d bytes", destPath, existingSize))
+				}
+			} else if !os.IsNotExist(err) {
+				return nil, fmt.Errorf("error checking file: %w", err)
+			}
+		}
+
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create request: %w", err)
+		}
+
+		if resume && existingSize > 0 {
+			req.Header.Set("Range", fmt.Sprintf("bytes=%d-", existingSize))
 		}
 
 		resp, err := d.client.Do(req)
@@ -100,6 +102,11 @@ func (d *Downloader) DownloadFile(url, destPath string, resume bool, expectedSiz
 		if err := os.MkdirAll(filepath.Dir(destPath), 0750); err != nil {
 			_ = resp.Body.Close()
 			return nil, fmt.Errorf("failed to create directory: %w", err)
+		}
+
+		if resume && existingSize > 0 && resp.StatusCode == http.StatusOK {
+			// Server ignored Range; restart from scratch.
+			existingSize = 0
 		}
 
 		var file *os.File

@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 
 	"github.com/clelange/cernopendata-client-go/internal/utils"
@@ -372,6 +373,71 @@ func TestDownloadFileResume(t *testing.T) {
 
 	if !result.Success {
 		t.Error("DownloadFile() expected success")
+	}
+}
+
+func TestDownloadFileResumeRetryUsesUpdatedRange(t *testing.T) {
+	content := []byte("abcdefghijk")
+	existing := []byte("abc")
+	firstChunk := []byte("defg")
+	secondChunk := []byte("hijk")
+
+	callCount := 0
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		switch callCount {
+		case 1:
+			if r.Header.Get("Range") != "bytes=3-" {
+				t.Errorf("Expected first Range header 'bytes=3-', got %q", r.Header.Get("Range"))
+			}
+			w.Header().Set("Content-Length", "8")
+			w.WriteHeader(http.StatusPartialContent)
+			_, _ = w.Write(firstChunk)
+			if f, ok := w.(http.Flusher); ok {
+				f.Flush()
+			}
+		case 2:
+			if r.Header.Get("Range") != "bytes=7-" {
+				t.Errorf("Expected retry Range header 'bytes=7-', got %q", r.Header.Get("Range"))
+			}
+			w.Header().Set("Content-Length", strconv.Itoa(len(secondChunk)))
+			w.WriteHeader(http.StatusPartialContent)
+			_, _ = w.Write(secondChunk)
+		default:
+			t.Fatalf("Unexpected request count: %d", callCount)
+		}
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(handler))
+	defer server.Close()
+
+	tmpDir := t.TempDir()
+	destPath := filepath.Join(tmpDir, "testfile.txt")
+
+	if err := os.WriteFile(destPath, existing, 0600); err != nil {
+		t.Fatalf("Failed to create partial file: %v", err)
+	}
+
+	d := &Downloader{
+		client:     server.Client(),
+		retryLimit: 2,
+		retrySleep: 0,
+	}
+
+	result, err := d.DownloadFile(server.URL+"/testfile.txt", destPath, true, int64(len(content)))
+	if err != nil {
+		t.Fatalf("DownloadFile() error = %v", err)
+	}
+	if !result.Success {
+		t.Fatalf("DownloadFile() expected success")
+	}
+
+	final, err := os.ReadFile(destPath) // #nosec G304 -- test file path
+	if err != nil {
+		t.Fatalf("Failed to read file: %v", err)
+	}
+	if string(final) != string(content) {
+		t.Errorf("File content = %q, want %q", string(final), string(content))
 	}
 }
 
