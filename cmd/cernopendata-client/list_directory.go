@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"time"
@@ -41,13 +42,21 @@ Examples:
 
      $ cernopendata-client list-directory /eos/opendata/cms/Run2010B/BTau/AOD --recursive
 
-     $ cernopendata-client list-directory /eos/opendata/cms/Run2010B --recursive --timeout 10`,
+     $ cernopendata-client list-directory /eos/opendata/cms/Run2010B --recursive --timeout 10
+
+     $ cernopendata-client list-directory /eos/opendata/cms/Run2010B --format json`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		path := args[0]
 		recursive, _ := cmd.Flags().GetBool("recursive")
 		timeout, _ := cmd.Flags().GetInt("timeout")
 		verbose, _ := cmd.Flags().GetBool("verbose")
+		outputFormat, _ := cmd.Flags().GetString("format")
+
+		if outputFormat != "text" && outputFormat != "json" {
+			printer.DisplayMessage(printer.Error, fmt.Sprintf("Invalid format: %s (choose from 'text', 'json')", outputFormat))
+			os.Exit(1)
+		}
 
 		ctx := cmd.Context()
 		if timeout > 0 {
@@ -56,23 +65,56 @@ Examples:
 			defer cancel()
 		}
 
-		lister := lister.NewLister()
+		l := lister.NewLister()
+
+		var entries []lister.FileInfo
+		var err error
 
 		if recursive {
-			entries, err := lister.ListDirectoryRecursive(ctx, path)
+			entries, err = l.ListDirectoryRecursive(ctx, path)
 			if err != nil {
 				printer.DisplayMessage(printer.Error, fmt.Sprintf("Failed to list directory: %v", err))
 				os.Exit(1)
 			}
-			printEntries(entries, verbose)
 		} else {
-			entries, err := lister.ListDirectory(ctx, path)
+			entries, err = l.ListDirectory(ctx, path)
 			if err != nil {
 				printer.DisplayMessage(printer.Error, fmt.Sprintf("Failed to list directory: %v", err))
 				os.Exit(1)
 			}
-			printEntries(entries, verbose)
 		}
+
+		if outputFormat == "json" {
+			type DirOutput struct {
+				Name    string `json:"name"`
+				Size    int64  `json:"size,omitempty"`
+				ModTime string `json:"mod_time,omitempty"`
+				IsDir   bool   `json:"is_dir"`
+			}
+
+			var output []DirOutput
+			for _, entry := range entries {
+				dirEntry := DirOutput{
+					Name:  entry.Name,
+					IsDir: entry.IsDir,
+				}
+				if verbose {
+					dirEntry.Size = entry.Size
+					dirEntry.ModTime = entry.ModTime
+				}
+				output = append(output, dirEntry)
+			}
+
+			jsonBytes, err := json.MarshalIndent(output, "", "  ")
+			if err != nil {
+				printer.DisplayMessage(printer.Error, fmt.Sprintf("Failed to marshal JSON: %v", err))
+				os.Exit(1)
+			}
+			printer.DisplayOutput(string(jsonBytes))
+			return
+		}
+
+		printEntries(entries, verbose)
 	},
 }
 
@@ -80,4 +122,5 @@ func init() {
 	listDirectoryCmd.Flags().BoolP("verbose", "v", false, "Verbose output")
 	listDirectoryCmd.Flags().BoolP("recursive", "r", false, "Iterate recursively in the given directory path")
 	listDirectoryCmd.Flags().IntP("timeout", "t", config.ListDirectoryTimeout, "Timeout in seconds after which to exit running the command")
+	listDirectoryCmd.Flags().StringP("format", "f", "text", "Output format (text|json)")
 }

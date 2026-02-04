@@ -1756,3 +1756,37 @@ func TestIntegrationGetFileLocationsJSON(t *testing.T) {
 
 	t.Logf("Successfully got %d files in JSON format", len(files))
 }
+
+func TestIntegrationListDirectoryJSON(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	// #nosec G204
+	cmd := exec.Command(getBinaryPath(), "list-directory", "/eos/opendata/cms/software/HiggsExample20112012", "--format", "json")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Logf("Warning: list-directory with JSON format failed (network may be unavailable): %v\nOutput: %s", err, string(output))
+		return
+	}
+
+	var entries []map[string]interface{}
+	if err := json.Unmarshal(output, &entries); err != nil {
+		t.Fatalf("Failed to parse JSON output: %v\nOutput: %s", err, string(output))
+	}
+
+	if len(entries) == 0 {
+		t.Fatal("Expected at least one entry in output")
+	}
+
+	for _, entry := range entries {
+		if _, ok := entry["name"]; !ok {
+			t.Error("Entry missing 'name' field")
+		}
+		if _, ok := entry["is_dir"]; !ok {
+			t.Error("Entry missing 'is_dir' field")
+		}
+	}
+
+	t.Logf("Successfully got %d entries in JSON format", len(entries))
+}
