@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.7.1](https://github.com/clelange/cernopendata-client-go/compare/v0.7.0...v0.7.1) (2026-02-04)
+
+
+### Bug Fixes
+
+* **checksum:** stream adler32 hashing ([4d102c9](https://github.com/clelange/cernopendata-client-go/commit/4d102c9f90bd85b4bfe82d9b55d277988ec32a00))
+* **progress:** throttle updates ([d7e2530](https://github.com/clelange/cernopendata-client-go/commit/d7e2530ce3fdb2ce00d40f16cc84c2f77bd7e9fe))
+* **searcher:** add 30s http timeout ([95d4cb4](https://github.com/clelange/cernopendata-client-go/commit/95d4cb4d977ce63a5858d56a95d077690ebc9d9a))
+
 ## [0.7.0](https://github.com/clelange/cernopendata-client-go/compare/v0.6.0...v0.7.0) (2026-02-04)
 
 
