@@ -27,12 +27,13 @@ type Writer struct {
 // If totalBytes is 0 or negative, percentage won't be displayed.
 func NewWriter(writer io.Writer, filename string, totalBytes int64) *Writer {
 	return &Writer{
-		writer:     writer,
-		totalBytes: totalBytes,
-		filename:   filename,
-		startTime:  time.Now(),
-		lastUpdate: time.Time{},
-		output:     os.Stdout,
+		writer:      writer,
+		totalBytes:  totalBytes,
+		filename:    filename,
+		startTime:   time.Now(),
+		lastUpdate:  time.Time{},
+		output:      os.Stdout,
+		updateEvery: 200 * time.Millisecond,
 	}
 }
 
