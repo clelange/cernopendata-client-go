@@ -18,7 +18,10 @@ func ExtractNestedField(data interface{}, path string) (interface{}, error) {
 	for i, field := range fields {
 		val := reflect.ValueOf(current)
 		if val.Kind() == reflect.Map {
-			mapVal := val.Interface().(map[string]interface{})
+			mapVal, ok := val.Interface().(map[string]interface{})
+			if !ok {
+				return nil, fmt.Errorf("expected map[string]interface{}, got %T", val.Interface())
+			}
 			if v, ok := mapVal[field]; ok {
 				// If this is the last field, return the value directly
 				if i == len(fields)-1 {
@@ -63,7 +66,12 @@ func GetNestedField(record interface{}, path string) (interface{}, error) {
 		return record, nil
 	}
 
-	// Convert struct to map[string]interface{} for field access
+	// Record is now a map, delegate to ExtractNestedField
+	if recordMap, ok := record.(map[string]interface{}); ok {
+		return ExtractNestedField(recordMap, path)
+	}
+
+	// Fallback: try to convert to map (backward compatibility)
 	var recordMap map[string]interface{}
 	jsonBytes, err := json.Marshal(record)
 	if err != nil {

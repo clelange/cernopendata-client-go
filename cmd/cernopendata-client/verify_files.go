@@ -60,7 +60,12 @@ Examples:
 			os.Exit(1)
 		}
 
-		files := client.GetFilesList(record, "http", false)
+		files, err := client.GetFilesList(record, "http", false)
+		if err != nil {
+			printer.DisplayMessage(printer.Error, fmt.Sprintf("Failed to get files list: %v", err))
+			os.Exit(1)
+		}
+
 		var fileList []interface{}
 		for _, file := range files {
 			fileList = append(fileList, map[string]interface{}{

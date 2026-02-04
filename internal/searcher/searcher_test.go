@@ -38,22 +38,23 @@ func TestGetRecord(t *testing.T) {
 			recid: 3005,
 			handler: func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
+				metadata := map[string]interface{}{
+					"recid": 3005,
+					"title": "Test Record",
+					"doi":   "10.7483/record/3005",
+				}
 				resp := RecordResponse{
-					ID: "3005",
-					Metadata: RecordMetadata{
-						RecID: 3005,
-						Title: "Test Record",
-						DOI:   "10.7483/record/3005",
-					},
+					ID:       "3005",
+					Metadata: metadata,
 				}
 				_ = json.NewEncoder(w).Encode(resp)
 			},
 			want: &RecordResponse{
 				ID: "3005",
-				Metadata: RecordMetadata{
-					RecID: 3005,
-					Title: "Test Record",
-					DOI:   "10.7483/record/3005",
+				Metadata: map[string]interface{}{
+					"recid": 3005,
+					"title": "Test Record",
+					"doi":   "10.7483/record/3005",
 				},
 			},
 			wantErr: false,
@@ -95,12 +96,30 @@ func TestGetRecord(t *testing.T) {
 					t.Fatal("GetRecord() returned nil record")
 				}
 
-				if record.Metadata.RecID != tt.want.Metadata.RecID {
-					t.Errorf("GetRecord() recid = %d, want %d", record.Metadata.RecID, tt.want.Metadata.RecID)
+				recid, err := getMetadataFieldAsInt(record.Metadata, "recid")
+				if err != nil {
+					t.Fatal(err)
+				}
+				wantRecid, err := getMetadataFieldAsInt(tt.want.Metadata, "recid")
+				if err != nil {
+					t.Fatal(err)
 				}
 
-				if record.Metadata.Title != tt.want.Metadata.Title {
-					t.Errorf("GetRecord() title = %q, want %q", record.Metadata.Title, tt.want.Metadata.Title)
+				if recid != wantRecid {
+					t.Errorf("GetRecord() recid = %d, want %d", recid, wantRecid)
+				}
+
+				title, err := getMetadataFieldAsString(record.Metadata, "title")
+				if err != nil {
+					t.Fatal(err)
+				}
+				wantTitle, err := getMetadataFieldAsString(tt.want.Metadata, "title")
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				if title != wantTitle {
+					t.Errorf("GetRecord() title = %q, want %q", title, wantTitle)
 				}
 			}
 		})
@@ -118,12 +137,16 @@ func TestGetFilesList(t *testing.T) {
 		{
 			name: "http protocol without expand",
 			record: &RecordResponse{
-				Metadata: RecordMetadata{
-					RecID: 3005,
-					Files: []FileInfo{
-						{URI: "http://opendata.cern.ch/test.txt", Size: 100, Checksum: "adler32:12345678"},
+				Metadata: map[string]interface{}{
+					"recid": 3005,
+					"files": []interface{}{
+						map[string]interface{}{
+							"uri":      "http://opendata.cern.ch/test.txt",
+							"size":     100,
+							"checksum": "adler32:12345678",
+						},
 					},
-					FileIndices: []FileIndex{},
+					"_file_indices": []interface{}{},
 				},
 			},
 			protocol: "http",
@@ -133,15 +156,19 @@ func TestGetFilesList(t *testing.T) {
 		{
 			name: "root protocol without expand",
 			record: &RecordResponse{
-				Metadata: RecordMetadata{
-					RecID: 3005,
-					FileIndices: []FileIndex{
-						{
-							Key:      "index1",
-							Size:     100,
-							Checksum: "adler32:87654321",
-							Files: []InnerFileInfo{
-								{URI: "root://eospublic.cern.ch//eos/opendata/cms/inner.txt", Size: 50, Checksum: "adler32:11111111"},
+				Metadata: map[string]interface{}{
+					"recid": 3005,
+					"_file_indices": []interface{}{
+						map[string]interface{}{
+							"key":      "index1",
+							"size":     100,
+							"checksum": "adler32:87654321",
+							"files": []interface{}{
+								map[string]interface{}{
+									"uri":      "root://eospublic.cern.ch//eos/opendata/cms/inner.txt",
+									"size":     50,
+									"checksum": "adler32:11111111",
+								},
 							},
 						},
 					},
@@ -154,12 +181,16 @@ func TestGetFilesList(t *testing.T) {
 		{
 			name: "https protocol without expand",
 			record: &RecordResponse{
-				Metadata: RecordMetadata{
-					RecID: 3005,
-					Files: []FileInfo{
-						{URI: "https://opendata.cern.ch/test.txt", Size: 100, Checksum: "adler32:12345678"},
+				Metadata: map[string]interface{}{
+					"recid": 3005,
+					"files": []interface{}{
+						map[string]interface{}{
+							"uri":      "https://opendata.cern.ch/test.txt",
+							"size":     100,
+							"checksum": "adler32:12345678",
+						},
 					},
-					FileIndices: []FileIndex{},
+					"_file_indices": []interface{}{},
 				},
 			},
 			protocol: "https",
@@ -169,19 +200,31 @@ func TestGetFilesList(t *testing.T) {
 		{
 			name: "expand file indices",
 			record: &RecordResponse{
-				Metadata: RecordMetadata{
-					RecID: 3005,
-					Files: []FileInfo{
-						{URI: "http://opendata.cern.ch/test.txt", Size: 100, Checksum: "adler32:12345678"},
+				Metadata: map[string]interface{}{
+					"recid": 3005,
+					"files": []interface{}{
+						map[string]interface{}{
+							"uri":      "http://opendata.cern.ch/test.txt",
+							"size":     100,
+							"checksum": "adler32:12345678",
+						},
 					},
-					FileIndices: []FileIndex{
-						{
-							Key:      "index1",
-							Size:     100,
-							Checksum: "adler32:87654321",
-							Files: []InnerFileInfo{
-								{URI: "http://opendata.cern.ch/inner1.txt", Size: 50, Checksum: "adler32:11111111"},
-								{URI: "http://opendata.cern.ch/inner2.txt", Size: 50, Checksum: "adler32:22222222"},
+					"_file_indices": []interface{}{
+						map[string]interface{}{
+							"key":      "index1",
+							"size":     100,
+							"checksum": "adler32:87654321",
+							"files": []interface{}{
+								map[string]interface{}{
+									"uri":      "http://opendata.cern.ch/inner1.txt",
+									"size":     50,
+									"checksum": "adler32:11111111",
+								},
+								map[string]interface{}{
+									"uri":      "http://opendata.cern.ch/inner2.txt",
+									"size":     50,
+									"checksum": "adler32:22222222",
+								},
 							},
 						},
 					},
@@ -194,12 +237,16 @@ func TestGetFilesList(t *testing.T) {
 		{
 			name: "xrootd protocol (no conversion)",
 			record: &RecordResponse{
-				Metadata: RecordMetadata{
-					RecID: 3005,
-					Files: []FileInfo{
-						{URI: "http://opendata.cern.ch/test.txt", Size: 100, Checksum: "adler32:12345678"},
+				Metadata: map[string]interface{}{
+					"recid": 3005,
+					"files": []interface{}{
+						map[string]interface{}{
+							"uri":      "http://opendata.cern.ch/test.txt",
+							"size":     100,
+							"checksum": "adler32:12345678",
+						},
 					},
-					FileIndices: []FileIndex{},
+					"_file_indices": []interface{}{},
 				},
 			},
 			protocol: "xrootd",
@@ -212,7 +259,12 @@ func TestGetFilesList(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			server := "http://test.server"
 			client := NewClient(server)
-			files := client.GetFilesList(tt.record, tt.protocol, tt.expand)
+			files, err := client.GetFilesList(tt.record, tt.protocol, tt.expand)
+
+			if err != nil {
+				t.Errorf("GetFilesList() error = %v", err)
+				return
+			}
 
 			if len(files) != tt.wantLen {
 				t.Errorf("GetFilesList() length = %d, want %d", len(files), tt.wantLen)
@@ -245,13 +297,14 @@ func TestGetRecordByDOI(t *testing.T) {
 			handler: func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				if strings.Contains(r.URL.Path, "records/") {
+					metadata := map[string]interface{}{
+						"recid": 3005,
+						"title": "Test Record",
+						"doi":   "10.7483/record/3005",
+					}
 					resp := RecordResponse{
-						ID: "3005",
-						Metadata: RecordMetadata{
-							RecID: 3005,
-							Title: "Test Record",
-							DOI:   "10.7483/record/3005",
-						},
+						ID:       "3005",
+						Metadata: metadata,
 					}
 					_ = json.NewEncoder(w).Encode(resp)
 				} else {
@@ -319,8 +372,12 @@ func TestGetRecordByDOI(t *testing.T) {
 			}
 
 			if !tt.wantErr && record != nil {
-				if record.Metadata.RecID != tt.wantRecid {
-					t.Errorf("GetRecordByDOI() recid = %d, want %d", record.Metadata.RecID, tt.wantRecid)
+				recid, err := getMetadataFieldAsInt(record.Metadata, "recid")
+				if err != nil {
+					t.Fatal(err)
+				}
+				if recid != tt.wantRecid {
+					t.Errorf("GetRecordByDOI() recid = %d, want %d", recid, tt.wantRecid)
 				}
 			}
 		})
@@ -341,13 +398,14 @@ func TestGetRecordByTitle(t *testing.T) {
 			handler: func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				if strings.Contains(r.URL.Path, "records/") {
+					metadata := map[string]interface{}{
+						"recid": 3005,
+						"title": "Test Record",
+						"doi":   "10.7483/record/3005",
+					}
 					resp := RecordResponse{
-						ID: "3005",
-						Metadata: RecordMetadata{
-							RecID: 3005,
-							Title: "Test Record",
-							DOI:   "10.7483/record/3005",
-						},
+						ID:       "3005",
+						Metadata: metadata,
 					}
 					_ = json.NewEncoder(w).Encode(resp)
 				} else {
@@ -396,8 +454,12 @@ func TestGetRecordByTitle(t *testing.T) {
 			}
 
 			if !tt.wantErr && record != nil {
-				if record.Metadata.RecID != tt.wantRecid {
-					t.Errorf("GetRecordByTitle() recid = %d, want %d", record.Metadata.RecID, tt.wantRecid)
+				recid, err := getMetadataFieldAsInt(record.Metadata, "recid")
+				if err != nil {
+					t.Fatal(err)
+				}
+				if recid != tt.wantRecid {
+					t.Errorf("GetRecordByTitle() recid = %d, want %d", recid, tt.wantRecid)
 				}
 			}
 		})
@@ -884,18 +946,17 @@ func TestGetRecidWithDOI(t *testing.T) {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if strings.Contains(r.URL.Path, "/api/records/") {
-			// Direct record fetch
+			metadata := map[string]interface{}{
+				"recid": 3005,
+				"title": "Test Record",
+				"doi":   "10.7483/OPENDATA.TEST",
+			}
 			resp := RecordResponse{
-				ID: "3005",
-				Metadata: RecordMetadata{
-					RecID: 3005,
-					Title: "Test Record",
-					DOI:   "10.7483/OPENDATA.TEST",
-				},
+				ID:       "3005",
+				Metadata: metadata,
 			}
 			_ = json.NewEncoder(w).Encode(resp)
 		} else {
-			// Search response
 			resp := SearchResponse{
 				Hits: SearchHits{
 					Total: 1,
@@ -925,12 +986,13 @@ func TestGetRecidWithTitle(t *testing.T) {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if strings.Contains(r.URL.Path, "/api/records/") {
+			metadata := map[string]interface{}{
+				"recid": 1234,
+				"title": "My Test Title",
+			}
 			resp := RecordResponse{
-				ID: "1234",
-				Metadata: RecordMetadata{
-					RecID: 1234,
-					Title: "My Test Title",
-				},
+				ID:       "1234",
+				Metadata: metadata,
 			}
 			_ = json.NewEncoder(w).Encode(resp)
 		} else {

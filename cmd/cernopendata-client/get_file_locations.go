@@ -74,7 +74,11 @@ Examples:
 			os.Exit(1)
 		}
 
-		files := client.GetFilesList(record, protocol, expand)
+		files, err := client.GetFilesList(record, protocol, expand)
+		if err != nil {
+			printer.DisplayMessage(printer.Error, fmt.Sprintf("Failed to get files list: %v", err))
+			os.Exit(1)
+		}
 
 		if expand {
 			filteredFiles, hasOfflineWarning := searcher.FilterFilesByAvailability(files, fileAvailability)

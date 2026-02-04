@@ -13,39 +13,8 @@ import (
 )
 
 type RecordResponse struct {
-	Metadata RecordMetadata `json:"metadata"`
-	ID       string         `json:"id"`
-}
-
-type RecordMetadata struct {
-	Title         string        `json:"title"`
-	RecID         int           `json:"recid,string"` // Parse as string, convert to int
-	DOI           string        `json:"doi"`
-	Files         []FileInfo    `json:"files"`
-	FileIndices   []FileIndex   `json:"_file_indices"`
-	SystemDetails SystemDetails `json:"system_details"`
-	Usage         Usage         `json:"usage"`
-}
-
-type SystemDetails struct {
-	ContainerImages []ContainerImage `json:"container_images"`
-	GlobalTag       string           `json:"global_tag"`
-	Release         string           `json:"release"`
-}
-
-type ContainerImage struct {
-	Name     string `json:"name"`
-	Registry string `json:"registry"`
-}
-
-type Usage struct {
-	Description string      `json:"description"`
-	Links       []UsageLink `json:"links"`
-}
-
-type UsageLink struct {
-	Description string `json:"description"`
-	URL         string `json:"url"`
+	Metadata map[string]interface{} `json:"metadata"`
+	ID       string                 `json:"id"`
 }
 
 type FileInfo struct {
@@ -53,20 +22,6 @@ type FileInfo struct {
 	Size         int64  `json:"size"`
 	Checksum     string `json:"checksum"`
 	Availability string `json:"availability,omitempty"` // "online" or "on demand"
-}
-
-type FileIndex struct {
-	Key      string          `json:"key"`
-	Size     int64           `json:"size"`
-	Checksum string          `json:"checksum"`
-	Files    []InnerFileInfo `json:"files"`
-}
-
-type InnerFileInfo struct {
-	URI          string `json:"uri"`
-	Size         int64  `json:"size"`
-	Checksum     string `json:"checksum"`
-	Availability string `json:"availability"`
 }
 
 type SearchResponse struct {
@@ -100,6 +55,105 @@ type Client struct {
 	client *http.Client
 }
 
+func cleanupMetadata(metadata map[string]interface{}) error {
+	if metadata == nil {
+		return fmt.Errorf("metadata is nil")
+	}
+
+	delete(metadata, "_files")
+
+	if files, ok := metadata["files"].([]interface{}); ok {
+		for _, file := range files {
+			if fileMap, ok := file.(map[string]interface{}); ok {
+				delete(fileMap, "bucket")
+				delete(fileMap, "version_id")
+			}
+		}
+	}
+
+	if indices, ok := metadata["_file_indices"].([]interface{}); ok {
+		for _, idx := range indices {
+			if idxMap, ok := idx.(map[string]interface{}); ok {
+				delete(idxMap, "bucket")
+				if files, ok := idxMap["files"].([]interface{}); ok {
+					for _, file := range files {
+						if fileMap, ok := file.(map[string]interface{}); ok {
+							delete(fileMap, "bucket")
+							delete(fileMap, "version_id")
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func getMetadataFieldAsString(metadata map[string]interface{}, field string) (string, error) {
+	value, ok := metadata[field]
+	if !ok {
+		return "", fmt.Errorf("field '%s' not found", field)
+	}
+
+	strValue, ok := value.(string)
+	if !ok {
+		return "", fmt.Errorf("field '%s' is not a string, got %T", field, value)
+	}
+
+	return strValue, nil
+}
+
+func getMetadataFieldAsInt(metadata map[string]interface{}, field string) (int, error) {
+	value, ok := metadata[field]
+	if !ok {
+		return 0, fmt.Errorf("field '%s' not found", field)
+	}
+
+	if intValue, ok := value.(int); ok {
+		return intValue, nil
+	}
+
+	if strValue, ok := value.(string); ok {
+		intValue, err := strconv.Atoi(strValue)
+		if err != nil {
+			return 0, fmt.Errorf("field '%s' is not a valid integer string: %w", field, err)
+		}
+		return intValue, nil
+	}
+
+	if floatValue, ok := value.(float64); ok {
+		return int(floatValue), nil
+	}
+
+	return 0, fmt.Errorf("field '%s' is not an integer, got %T", field, value)
+}
+
+func getMetadataFieldAsInt64(metadata map[string]interface{}, field string) (int64, error) {
+	value, ok := metadata[field]
+	if !ok {
+		return 0, fmt.Errorf("field '%s' not found", field)
+	}
+
+	if intValue, ok := value.(int); ok {
+		return int64(intValue), nil
+	}
+
+	if strValue, ok := value.(string); ok {
+		intValue, err := strconv.ParseInt(strValue, 10, 64)
+		if err != nil {
+			return 0, fmt.Errorf("field '%s' is not a valid integer string: %w", field, err)
+		}
+		return intValue, nil
+	}
+
+	if floatValue, ok := value.(float64); ok {
+		return int64(floatValue), nil
+	}
+
+	return 0, fmt.Errorf("field '%s' is not an integer, got %T", field, value)
+}
+
 func NewClient(server string) *Client {
 	return &Client{
 		server: server,
@@ -122,6 +176,10 @@ func (c *Client) GetRecord(recid int) (*RecordResponse, error) {
 	var recordResp RecordResponse
 	if err := json.NewDecoder(resp.Body).Decode(&recordResp); err != nil {
 		return nil, fmt.Errorf("failed to decode record response: %w", err)
+	}
+
+	if err := cleanupMetadata(recordResp.Metadata); err != nil {
+		return nil, fmt.Errorf("failed to cleanup metadata: %w", err)
 	}
 
 	return &recordResp, nil
@@ -191,49 +249,126 @@ func convertURI(uri, serverRoot, serverURI, protocol string) string {
 	}
 }
 
-func (c *Client) GetFilesList(record *RecordResponse, protocol string, expand bool) []FileInfo {
+func (c *Client) GetFilesList(record *RecordResponse, protocol string, expand bool) ([]FileInfo, error) {
 	var files []FileInfo
+
+	if record.Metadata == nil {
+		return nil, fmt.Errorf("metadata is nil")
+	}
+
+	recidInt, err := getMetadataFieldAsInt(record.Metadata, "recid")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get recid from metadata: %w", err)
+	}
 
 	serverRoot := config.ServerRootURI
 	serverURI := c.server
 
-	for _, file := range record.Metadata.Files {
-		files = append(files, FileInfo{
-			URI:          convertURI(file.URI, serverRoot, serverURI, protocol),
-			Size:         file.Size,
-			Checksum:     file.Checksum,
-			Availability: "online", // Direct files are always online
-		})
-	}
+	if filesArray, ok := record.Metadata["files"].([]interface{}); ok {
+		for _, file := range filesArray {
+			fileMap, ok := file.(map[string]interface{})
+			if !ok {
+				return nil, fmt.Errorf("file entry is not a map")
+			}
 
-	if expand {
-		for _, index := range record.Metadata.FileIndices {
-			for _, innerFile := range index.Files {
-				files = append(files, FileInfo{
-					URI:          convertURI(innerFile.URI, serverRoot, serverURI, protocol),
-					Size:         innerFile.Size,
-					Checksum:     innerFile.Checksum,
-					Availability: innerFile.Availability,
-				})
+			uri, err := getMetadataFieldAsString(fileMap, "uri")
+			if err != nil {
+				return nil, fmt.Errorf("failed to get uri: %w", err)
 			}
-		}
-	} else {
-		for _, index := range record.Metadata.FileIndices {
-			var uri string
-			if protocol == "xrootd" {
-				uri = fmt.Sprintf("%s/record/%d/file_index/%s", serverRoot, record.Metadata.RecID, index.Key)
-			} else {
-				uri = fmt.Sprintf("%s/record/%d/file_index/%s", serverURI, record.Metadata.RecID, index.Key)
+
+			size, err := getMetadataFieldAsInt64(fileMap, "size")
+			if err != nil {
+				return nil, fmt.Errorf("failed to get size: %w", err)
 			}
+
+			checksum, _ := getMetadataFieldAsString(fileMap, "checksum")
+
 			files = append(files, FileInfo{
-				URI:      uri,
-				Size:     index.Size,
-				Checksum: "",
+				URI:          convertURI(uri, serverRoot, serverURI, protocol),
+				Size:         size,
+				Checksum:     checksum,
+				Availability: "online",
 			})
 		}
 	}
 
-	return files
+	if expand {
+		if indices, ok := record.Metadata["_file_indices"].([]interface{}); ok {
+			for _, index := range indices {
+				indexMap, ok := index.(map[string]interface{})
+				if !ok {
+					return nil, fmt.Errorf("index entry is not a map")
+				}
+
+				if indexFiles, ok := indexMap["files"].([]interface{}); ok {
+					for _, innerFile := range indexFiles {
+						fileMap, ok := innerFile.(map[string]interface{})
+						if !ok {
+							return nil, fmt.Errorf("inner file entry is not a map")
+						}
+
+						uri, err := getMetadataFieldAsString(fileMap, "uri")
+						if err != nil {
+							return nil, fmt.Errorf("failed to get uri: %w", err)
+						}
+
+						size, err := getMetadataFieldAsInt64(fileMap, "size")
+						if err != nil {
+							return nil, fmt.Errorf("failed to get size: %w", err)
+						}
+
+						checksum, _ := getMetadataFieldAsString(fileMap, "checksum")
+
+						availability, _ := getMetadataFieldAsString(fileMap, "availability")
+						if availability == "" {
+							availability = "online"
+						}
+
+						files = append(files, FileInfo{
+							URI:          convertURI(uri, serverRoot, serverURI, protocol),
+							Size:         size,
+							Checksum:     checksum,
+							Availability: availability,
+						})
+					}
+				}
+			}
+		}
+	} else {
+		if indices, ok := record.Metadata["_file_indices"].([]interface{}); ok {
+			for _, index := range indices {
+				indexMap, ok := index.(map[string]interface{})
+				if !ok {
+					return nil, fmt.Errorf("index entry is not a map")
+				}
+
+				key, err := getMetadataFieldAsString(indexMap, "key")
+				if err != nil {
+					return nil, fmt.Errorf("failed to get key: %w", err)
+				}
+
+				size, err := getMetadataFieldAsInt64(indexMap, "size")
+				if err != nil {
+					return nil, fmt.Errorf("failed to get size: %w", err)
+				}
+
+				var uri string
+				if protocol == "xrootd" {
+					uri = fmt.Sprintf("%s/record/%d/file_index/%s", serverRoot, recidInt, key)
+				} else {
+					uri = fmt.Sprintf("%s/record/%d/file_index/%s", serverURI, recidInt, key)
+				}
+
+				files = append(files, FileInfo{
+					URI:      uri,
+					Size:     size,
+					Checksum: "",
+				})
+			}
+		}
+	}
+
+	return files, nil
 }
 
 // FilterFilesByAvailability filters files by their availability status.
@@ -278,7 +413,11 @@ func GetRecid(server, doi string, title string, recid int) (int, error) {
 		if err != nil {
 			return 0, err
 		}
-		return record.Metadata.RecID, nil
+		recidValue, err := getMetadataFieldAsInt(record.Metadata, "recid")
+		if err != nil {
+			return 0, fmt.Errorf("failed to extract recid from metadata: %w", err)
+		}
+		return recidValue, nil
 	}
 
 	if title != "" {
@@ -286,7 +425,11 @@ func GetRecid(server, doi string, title string, recid int) (int, error) {
 		if err != nil {
 			return 0, err
 		}
-		return record.Metadata.RecID, nil
+		recidValue, err := getMetadataFieldAsInt(record.Metadata, "recid")
+		if err != nil {
+			return 0, fmt.Errorf("failed to extract recid from metadata: %w", err)
+		}
+		return recidValue, nil
 	}
 
 	return 0, fmt.Errorf("please provide recid, doi, or title")
