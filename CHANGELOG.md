@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.2](https://github.com/clelange/cernopendata-client-go/compare/v0.7.1...v0.7.2) (2026-02-04)
+
+
+### Bug Fixes
+
+* **xrootd:** tune read buffer ([e63f90f](https://github.com/clelange/cernopendata-client-go/commit/e63f90fc4cb9966dd88db1a3f9cf11a280926027))
+
 ## [0.7.1](https://github.com/clelange/cernopendata-client-go/compare/v0.7.0...v0.7.1) (2026-02-04)
 
 
