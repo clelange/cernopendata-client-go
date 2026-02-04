@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/clelange/cernopendata-client-go/compare/v0.8.0...v0.8.1) (2026-02-04)
+
+
+### Bug Fixes
+
+* **cli:** change list-directory format short flag to -m for consistency ([a618edc](https://github.com/clelange/cernopendata-client-go/commit/a618edcad85cba8dc08b460545c74961f3ed94db))
+
 ## [0.8.0](https://github.com/clelange/cernopendata-client-go/compare/v0.7.2...v0.8.0) (2026-02-04)
 
 
