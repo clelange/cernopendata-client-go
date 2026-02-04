@@ -3,17 +3,23 @@ package checksum
 import (
 	"fmt"
 	"hash/adler32"
+	"io"
 	"os"
 )
 
 func CalculateChecksum(filePath string) (string, error) {
-	data, err := os.ReadFile(filePath) // #nosec G304
+	file, err := os.Open(filePath) // #nosec G304
 	if err != nil {
 		return "", err
 	}
+	defer func() { _ = file.Close() }()
 
-	adler := adler32.Checksum(data)
-	return fmt.Sprintf("adler32:%08x", adler), nil
+	hasher := adler32.New()
+	if _, err := io.Copy(hasher, file); err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("adler32:%08x", hasher.Sum32()), nil
 }
 
 func GetFileSize(filePath string) (int64, error) {
