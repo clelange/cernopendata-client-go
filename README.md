@@ -4,32 +4,14 @@ A command-line tool to download and verify files from CERN Open Data portal, wri
 
 ## Overview
 
-This is a Go implementation of the [cernopendata-client](https://github.com/cernopendata/cernopendata-client) Python client. It provides similar functionality with the following differences:
+This is a Go implementation of the [cernopendata-client](https://github.com/cernopendata/cernopendata-client) Python client.
 
-### Key Differences from Python Client
-
-| Feature | Python Client | Go Client | Notes |
-|---------|---------------|-----------|-------|
-| Language | Python 3.x | Go 1.24+ | |
-| Dependencies | click, requests, XRootD, pycurl | spf13/cobra, go-hep.org/x/hep/xrootd | |
-| Package Manager | pip | go modules | |
-| Binary Distribution | Source installation | Single static binary | No Python runtime required |
-| Flag Shorthands | `-r`, `-d`, `-t`, `-s`, etc. (may conflict) | Unique per command | See Flag Reference below |
-| Download Engine | pycurl with libcurl | Go http.Client / XRootD | Both HTTP and XRootD supported |
-| Resume Support | Yes | Yes | Range headers for HTTP, ReadAt for XRootD |
-| Retry Logic | Yes | Yes | Configurable attempts and sleep duration |
-| File Verification | Yes | Yes | ADLER32 checksums |
-| Regex Filtering | Yes | Yes | Multiple patterns supported |
-| Multiple Range Filters | Yes | Yes | Comma-separated ranges (e.g., 1-2,5-7) |
-| Recursive Directory Listing | Yes | Yes | With timeout support |
-| Shell Completion | Manual | Built-in (bash/zsh) | Auto-generated via Cobra |
-| Test Coverage | 59 CLI tests | 61 CLI tests (105%) | Exceeds Python by 2 tests |
-
-### Flag Reference (Go Client)
+## Flag Reference
 
 Each command uses unique flag shorthands to avoid conflicts:
 
 **get-metadata**:
+
 - `-r` `--recid` - Record ID
 - `-d` `--doi` - DOI
 - `-t` `--title` - Title
@@ -39,6 +21,7 @@ Each command uses unique flag shorthands to avoid conflicts:
 - `-s` `--server` - Server URI
 
 **get-file-locations**:
+
 - `-i` `--recid` - Record ID
 - `-D` `--doi` - DOI
 - `-T` `--title` - Title
@@ -46,52 +29,60 @@ Each command uses unique flag shorthands to avoid conflicts:
 - `-e` `--expand` - Expand file indices
 - `-V` `--verbose` - Verbose output (includes size, checksum, and availability)
 - `--file-availability` - Filter by availability (online|all)
+- `-m` `--format` - Output format (text|json, default: text)
 - `-S` `--server` - Server URI
 
 **download-files**:
+
 - `-R` `--recid` - Record ID
 - `-d` `--doi` - DOI
 - `-t` `--title` - Title
 - `-O` `--output-dir` - Output directory (defaults to recid/)
-- `-n` `--name-filter` - Glob pattern filter (comma-separated for multiple)
-- `-R` `--regexp` - Regex pattern filter (comma-separated for multiple)
-- `-g` `--range-filter` - Range filter (e.g., 1-2,5-7)
-- `-a` `--start-index` - Start index
-- `-z` `--end-index` - End index
-- `-y` `--retry` - Retry attempts (default: 3)
-- `-e` `--retry-sleep` - Sleep duration between retries in seconds (default: 1)
+- `-n` `--filter-name` - Glob pattern filter (comma-separated for multiple)
+- `-e` `--filter-regexp` - Regex pattern filter
+- `-r` `--filter-range` - Range filter (e.g., 1-2,5-7)
+- `-y` `--retry-limit` - Retry attempts (default: 10)
+- `-Y` `--retry-sleep` - Sleep duration between retries in seconds (default: 5)
 - `-v` `--verbose` - Verbose output
 - `-N` `--dry-run` - Dry run
 - `-V` `--verify` - Verify files after download
-- `-E` `--download-engine` - Download engine (http|xrootd, default: http)
-- `-E` `--expand` - Expand file indices
-- `-p` `--progress` - Show progress indicators
+- `--download-engine` - Download engine (http|xrootd, default: http)
+- `-x` `--expand` - Expand file indices
+- `--no-expand` - Don't expand file indices
+- `-P` `--progress` - Show progress indicators
+- `-p` `--protocol` - Protocol (http|xrootd)
 - `--file-availability` - Filter by availability (online|all, default: skip tape files with warning)
 - `-s` `--server` - Server URI
 
 **verify-files**:
+
 - `-r` `--recid` - Record ID
 - `-d` `--doi` - DOI
 - `-t` `--title` - Title
 - `-i` `--input-dir` - Input directory (defaults to recid/)
-- `-n` `--name-filter` - Glob pattern filter
-- `-R` `--regexp` - Regex pattern filter
+- `-n` `--filter-name` - Glob pattern filter
+- `-e` `--filter-regexp` - Regex pattern filter
 - `-s` `--server` - Server URI
 
 **list-directory**:
-- `-p` `--path` - XRootD path
+
+- `path` - XRootD path (positional argument)
 - `-v` `--verbose` - Verbose output
 - `-r` `--recursive` - List directories recursively
 - `-t` `--timeout` - Timeout in seconds (default: 300)
+- `-m` `--format` - Output format (text|json, default: text)
 
 **completion**:
+
 - `bash` - Generate bash completion
 - `zsh` - Generate zsh completion
 
 **update**:
+
 - `--check` - Only check for updates, don't install
 
 **search**:
+
 - `-q` `--query` - Full URL or query string from portal
 - `--query-pattern` - Free text search pattern
 - `-f` `--query-facet` - Facet filter (key=value, repeatable)
@@ -108,7 +99,7 @@ Each command uses unique flag shorthands to avoid conflicts:
 
 ### Requirements
 
-- Go 1.24 or later
+- Go 1.25 or later
 - For XRootD support (optional): `go-hep.org/x/hep/xrootd` (automatically downloaded)
 
 ### Option 1: Homebrew (macOS/Linux)
@@ -120,13 +111,15 @@ brew tap clelange/particle-physics
 brew install cernopendata-client
 ```
 
+This includes shell completion for bash and zsh automatically.
+
 To update:
 
 ```bash
 brew upgrade cernopendata-client
 ```
 
-### Option 2: One-line install script (Recommended)
+### Option 2: One-line install script (Linux/macOS)
 
 The fastest way to install on Linux or macOS:
 
@@ -135,6 +128,7 @@ The fastest way to install on Linux or macOS:
 ```
 
 This script will:
+
 - Detect your OS and architecture
 - Download latest release binary
 - Verify checksum
@@ -142,6 +136,8 @@ This script will:
 - Automatically configure your PATH if needed
 
 ### Option 3: Building from Source
+
+For Linux, macOS, or Windows:
 
 ```bash
 # Clone the repository
@@ -155,6 +151,23 @@ go build -o cernopendata-client ./cmd/cernopendata-client
 mv cernopendata-client /usr/local/bin/
 ```
 
+### Shell Completion
+
+Shell completion is included automatically with the Homebrew installation. For other installation methods:
+
+```bash
+# Generate bash completion script
+./cernopendata-client completion bash > /tmp/cernopendata-client.bash
+source /tmp/cernopendata-client.bash
+
+# Generate zsh completion script
+./cernopendata-client completion zsh > ~/.zsh/completions/_cernopendata-client
+
+# Add to .zshrc for automatic loading
+echo "fpath=(~/.zsh/completions \$fpath)" >> ~/.zshrc
+echo "autoload -U compinit && compinit" >> ~/.zshrc
+```
+
 ### XRootD Support
 
 XRootD downloads are fully supported using the `--download-engine xrootd` flag. The Go XRootD client (`go-hep.org/x/hep/xrootd`) is automatically downloaded when building the binary.
@@ -164,11 +177,13 @@ No additional system-level XRootD libraries are required - the implementation us
 ## Usage
 
 ### Version
+
 ```bash
 ./cernopendata-client version
 ```
 
 ### Update
+
 ```bash
 # Check for updates
 ./cernopendata-client update --check
@@ -180,12 +195,14 @@ No additional system-level XRootD libraries are required - the implementation us
 **Note:** If you installed via Homebrew, use `brew upgrade cernopendata-client-go` instead.
 
 The update command will:
+
 - Check for the latest version on GitHub
 - Download the appropriate binary for your platform
 - Verify the SHA256 checksum
 - Replace the current binary
 
 ### Get Metadata
+
 ```bash
 # Get full metadata
 ./cernopendata-client get-metadata --recid 3005
@@ -205,6 +222,7 @@ The update command will:
 ```
 
 ### Get File Locations
+
 ```bash
 # List files
 ./cernopendata-client get-file-locations --recid 5500
@@ -218,6 +236,9 @@ The update command will:
 # Expand file indices
 ./cernopendata-client get-file-locations --recid 5500 --expand
 
+# JSON output format
+./cernopendata-client get-file-locations --recid 5500 --format json
+
 # Filter by file availability (online files only)
 ./cernopendata-client get-file-locations --recid 8886 --file-availability online
 
@@ -226,6 +247,7 @@ The update command will:
 ```
 
 ### Download Files
+
 ```bash
 # Download all files
 ./cernopendata-client download-files --recid 5500
@@ -234,25 +256,22 @@ The update command will:
 ./cernopendata-client download-files --recid 5500 --output-dir ./data
 
 # Filter by name pattern (glob)
-./cernopendata-client download-files --recid 5500 --name-filter "*.root"
+./cernopendata-client download-files --recid 5500 --filter-name "*.root"
 
 # Filter by regex pattern
-./cernopendata-client download-files --recid 5500 --regexp ".*\\.root$"
+./cernopendata-client download-files --recid 5500 --filter-regexp ".*\\.root$"
 
 # Multiple name filters (comma-separated)
-./cernopendata-client download-files --recid 5500 --name-filter "*.root,*.txt"
+./cernopendata-client download-files --recid 5500 --filter-name "*.root,*.txt"
 
 # Multiple range filters
-./cernopendata-client download-files --recid 5500 --range-filter 1-5,10-15
-
-# Download by range
-./cernopendata-client download-files --recid 5500 --start-index 0 --end-index 10
+./cernopendata-client download-files --recid 5500 --filter-range 1-5,10-15
 
 # Dry run (don't actually download)
 ./cernopendata-client download-files --recid 5500 --dry-run
 
 # Configure retry attempts and sleep duration
-./cernopendata-client download-files --recid 5500 --retry 5 --retry-sleep 2
+./cernopendata-client download-files --recid 5500 --retry-limit 5 --retry-sleep 2
 
 # Verify files after download
 ./cernopendata-client download-files --recid 5500 --verify
@@ -263,6 +282,12 @@ The update command will:
 # Expand file indices
 ./cernopendata-client download-files --recid 5500 --expand
 
+# Don't expand file indices
+./cernopendata-client download-files --recid 5500 --no-expand
+
+# Show progress
+./cernopendata-client download-files --recid 5500 --progress
+
 # Download only online files (skip tape-based files)
 ./cernopendata-client download-files --recid 8886 --file-availability online
 
@@ -271,6 +296,7 @@ The update command will:
 ```
 
 **File Availability Note**: By default, the client will warn you about files stored on tape and skip them automatically. You'll see:
+
 - A warning message with a link to request file staging at the CERN Open Data portal
 - A summary showing files downloaded and files skipped (on tape)
 - Total bytes downloaded out of total bytes
@@ -278,18 +304,20 @@ The update command will:
 Use `--file-availability online` to explicitly filter to online files only, or `--file-availability all` to force attempting to download all files (not recommended unless files have been staged).
 
 ### Verify Files
+
 ```bash
 # Verify downloaded files
 ./cernopendata-client verify-files --recid 5500 --input-dir ./data
 
 # Verify only specific files by glob pattern
-./cernopendata-client verify-files --recid 5500 --input-dir ./data --name-filter "*.root"
+./cernopendata-client verify-files --recid 5500 --input-dir ./data --filter-name "*.root"
 
 # Verify only specific files by regex pattern
-./cernopendata-client verify-files --recid 5500 --input-dir ./data --regexp ".*\\.root$"
+./cernopendata-client verify-files --recid 5500 --input-dir ./data --filter-regexp ".*\\.root$"
 ```
 
 ### List Directory (XRootD)
+
 ```bash
 # List XRootD directory
 ./cernopendata-client list-directory /eos/opendata/cms
@@ -303,25 +331,15 @@ Use `--file-availability online` to explicitly filter to online files only, or `
 # List directory with custom timeout (seconds)
 ./cernopendata-client list-directory /eos/opendata/cms --timeout 60
 
+# JSON output format
+./cernopendata-client list-directory /eos/opendata/cms --format json
+
 # Full XRootD URLs are also supported
 ./cernopendata-client list-directory root://eospublic.cern.ch//eos/opendata/cms
 ```
 
-### Shell Completion
-```bash
-# Generate bash completion script
-./cernopendata-client completion bash > /tmp/cernopendata-client.bash
-source /tmp/cernopendata-client.bash
-
-# Generate zsh completion script
-./cernopendata-client completion zsh > ~/.zsh/completions/_cernopendata-client
-
-# Add to .zshrc for automatic loading
-echo "fpath=(~/.zsh/completions \$fpath)" >> ~/.zshrc
-echo "autoload -U compinit && compinit" >> ~/.zshrc
-```
-
 ### Search Records
+
 ```bash
 # Basic search
 ./cernopendata-client search --query-pattern "Higgs"
@@ -359,40 +377,77 @@ echo "autoload -U compinit && compinit" >> ~/.zshrc
 ## Development
 
 ### Running Tests
+
 ```bash
 # Run all tests
 go test ./...
+
+# Run all tests (using make)
+make test
 
 # Run tests with coverage
 go test ./... -cover
 
 # Run tests for a specific package
 go test ./internal/verifier
+
+# Run integration tests (requires network access)
+make test-integration
 ```
 
 ### Building
+
 ```bash
 # Build for current platform
+make build
+
+# Or using go directly
 go build -o bin/cernopendata-client ./cmd/cernopendata-client
 
 # Build for different platforms
+make build-all
+
+# Build for a specific platform
 GOOS=linux GOARCH=amd64 go build -o bin/cernopendata-client-linux ./cmd/cernopendata-client
 GOOS=darwin GOARCH=amd64 go build -o bin/cernopendata-client-macos ./cmd/cernopendata-client
 GOOS=windows GOARCH=amd64 go build -o bin/cernopendata-client.exe ./cmd/cernopendata-client
 ```
 
-### Linting
-```bash
-# Run gofmt
-gofmt -w .
+### Linting & Code Quality
 
-# Run go vet
+```bash
+# Run pre-commit hooks (recommended before committing)
+pre-commit run --all-files
+
+# Or use prek (faster drop-in replacement for pre-commit)
+prek run --all-files
+
+# Run golangci-lint
+make lint
+
+# Or run gofmt and go vet directly
+gofmt -w .
 go vet ./...
+```
+
+### Installing Pre-commit
+
+```bash
+# Install pre-commit
+pip install pre-commit
+
+# Or install prek (faster Rust-based alternative)
+cargo install prek
+
+# Setup git hooks
+pre-commit install
+# or
+prek install
 ```
 
 ## Package Structure
 
-```
+```text
 internal/
 ├── config/          # Configuration constants
 ├── searcher/        # Record search and API client
@@ -405,167 +460,19 @@ internal/
 ├── validator/      # Input validation functions
 ├── utils/          # Utility functions (parsing, etc.)
 ├── printer/        # Output formatting and display
+├── progress/       # Real-time progress tracking for downloads
+├── updater/        # Update checking functionality
 └── version/        # Version info
 ```
 
-## Implementation Status
-
-### Completed Commands (100% CLI Feature Parity ✅)
-
-- [x] **version** - Return version info
-- [x] **get-metadata** - Get metadata by recid/doi/title
-  - Supports multiple record identifiers (recid, DOI, title)
-  - Field extraction using dot notation
-  - Array filtering with `--filter`
-  - Output formats: pretty, json
-  - **Complete**: 12/12 tests passing (100%)
-- [x] **get-file-locations** - List file URLs
-  - Protocol conversion (root:// → http:// or https://)
-  - File index expansion with `--expand` flag
-  - Verbose mode with file details
-  - **Complete**: 13/13 tests passing (100%)
-- [x] **download-files** - Download files
-  - HTTP downloads with range resume
-  - XRootD downloads with ReadAt-based resume support
-  - Progress tracking ("Downloading file X of Y")
-  - Retry logic with configurable attempts and sleep duration
-  - Name filtering with glob patterns (comma-separated)
-  - Regex filtering with `--regexp` flag (comma-separated)
-  - Multiple range filters (e.g., 1-2,5-7)
-  - File index expansion with `--expand` flag
-  - Dry run mode
-  - Auto-verify after download with `--verify` flag
-  - Download engine selection (http|xrootd) with `--download-engine`
-  - **Complete**: 23/23 tests passing (100%)
-- [x] **verify-files** - Verify downloaded files
-  - Size verification
-  - ADLER32 checksum verification
-  - Missing file detection
-  - File count comparison ("Expected X, found Y")
-  - Regex filtering with `--regexp` flag
-  - Name filtering with glob patterns
-  - Custom input directory support
-  - **Complete**: 7/7 tests passing (exceeds Python by 2 tests)
-- [x] **list-directory** - List XRootD directories
-  - Directory listing via XRootD protocol
-  - Verbose output with size and timestamps
-  - Recursive listing with `--recursive` flag
-  - Configurable timeout with `--timeout` flag
-  - **Complete**: 6/6 tests passing (100%)
-- [x] **search** - Search CERN Open Data records
-  - Free text search with `--query-pattern`
-  - URL/query string parsing with `--query`
-  - Flexible facet filtering with `--query-facet`
-  - Field extraction with `--output-value`
-  - Batch fetching all results with `--size -1`
-  - Shows total hits count
-  - **Complete**: 8/8 integration tests passing (100%)
-- [x] **completion** - Shell completion scripts
-  - Bash completion generation
-  - Zsh completion generation
-  - Dynamic flag suggestions
-
-### Overall Status
-- **CLI Feature Parity**: ✅ 100% complete
-- **Test Coverage**: 105% of Python (61/61 tests vs Python 59)
-   - **All Active Tests**: ✅ 100% passing (65/65)
-
-## Test Coverage
-
-### CLI Test Coverage vs Python
-
-The Go implementation achieves **105% feature parity** with the Python client:
-
-| Command | Python Tests | Go Tests | Status | Notes |
-|---------|-------------|----------|--------|-------|
- | get-metadata | 12 | 12 | ✅ 100% |
-| get-file-locations | 13 | 13 | ✅ 100% |
-| download-files | 23 | 23 | ✅ 100% |
-| verify-files | 5 | 7 | ✅ 140% | Exceeds Python by 2 tests |
-| list-directory | 6 | 6 | ✅ 100% |
-| **TOTAL CLI** | **59** | **65** | ✅ **110%** | Exceeds Python by 6 tests |
-
-### Unit Test Coverage
-
-| Package | Python Tests | Go Tests | Gap | Status |
-|---------|--------------|----------|-----|--------|
-| test_downloader | 13 | 6 | 7 | Core features implemented |
-| test_verifier | 12 | 3 | 9 | Core features implemented |
-| test_validator | 7 | 7 | 0 | ✅ Full parity |
-| test_metadater | 7 | 3 | 4 | Core features implemented |
-| test_utils | 3 | 3 | 0 | ✅ Full parity |
-| test_version | 1 | 1 | 0 | ✅ Full parity |
-| xrootddownloader | - | 6 | - | ✅ Full package implemented |
-| **TOTAL UNIT** | **43** | **29** | **14** | All critical features covered |
-
-**COMBINED TOTALS:**
-- Python: 102 tests (59 CLI + 43 unit)
-- Go: 94 tests (65 CLI + 29 unit)
-- Gap: 8 tests (14 unit gap reduced to 8 with new metadater logic)
-
-### Combined Totals
-- **Python**: 102 tests (59 CLI + 43 unit)
-- **Go**: 90 tests (61 CLI + 29 unit)
-- **CLI Parity**: 105% (61/59 active tests)
-- **Unit Parity**: 67% (29/43 tests - all critical features covered)
-
-### Skipped Tests (0)
-
-All previously skipped tests have been un-skipped and are now passing:
-- ✅ get-metadata by DOI (10.7483/OPENDATA.CMS.A342.9982) - Fixed: Updated to correct DOI format
-- ✅ get-metadata output-value (system_details.global_tag) - Fixed: Added system_details field to RecordMetadata struct
-- ✅ get-metadata output-value (usage.links) - Fixed: Added usage field to RecordMetadata struct
-- ✅ get-metadata output-value (usage.links.url) - Fixed: Improved ExtractNestedField to handle array field extraction
-
-## Test Status
-
-| Package | Tests | Status |
-|---------|--------|--------|
-| internal/config | 3/3 | ✅ PASS |
-| internal/checksum | 2/2 | ✅ PASS |
-| internal/downloader | 6/6 | ✅ PASS |
-| internal/metadater | 3/3 | ✅ PASS |
-| internal/verifier | 3/3 | ✅ PASS |
-| internal/validator | 7/7 | ✅ PASS |
-| internal/utils | 3/3 | ✅ PASS |
-| internal/lister | 3/3 | ✅ PASS |
-| internal/printer | 3/3 | ✅ PASS |
-| internal/searcher | 15/15 | ✅ PASS |
-| internal/version | 1/1 | ✅ PASS |
-| internal/xrootddownloader | 6/6 | ✅ PASS |
-| cmd/cernopendata-client (integration) | 65/65 | ✅ PASS (100%) |
-| **TOTAL** | **120/120** | ✅ **100% active** |
-
 ## Dependencies
 
-- github.com/spf13/cobra v1.8.1 - CLI framework
+- github.com/spf13/cobra v1.10.2 - CLI framework
 - go-hep.org/x/hep v0.38.1 - XRootD protocol support
-
-## Future Enhancements
-
-### Completed ✅
-- [x] Integration tests (network-dependent) - 61 integration tests
-- [x] Unit tests for all packages - 29 unit tests
-- [x] XRootD support - Native Go implementation via go-hep.org/x/hep/xrootd
-- [x] Regex filtering - Multiple patterns supported
-- [x] Multiple range filters - Comma-separated ranges (e.g., 1-2,5-7)
-- [x] Recursive directory listing - With timeout support
-- [x] Progress indicators - "Downloading file X of Y"
-- [x] File verification after download - `--verify` flag
-- [x] Configurable retry sleep - `--retry-sleep` flag
-- [x] Shell completion - Built-in bash and zsh support
-
-### Possible Future Work
-- [ ] Support for custom XRootD authentication
-- [ ] Parallel downloads with concurrency control
-- [ ] Progress bar for downloads (visual progress indicator)
-- [ ] Configuration file support
-- [ ] Shell completion auto-installation
-- [ ] Additional unit tests for edge cases (14 test gap remaining)
 
 ## License
 
-This project is licensed under the GPLv3 license, same as the original Python cernopendata-client.
+This project is licensed under the GPLv3 license.
 
 ## Contributing
 
