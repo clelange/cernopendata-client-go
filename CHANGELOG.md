@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.0](https://github.com/clelange/cernopendata-client-go/compare/v0.6.0...v0.7.0) (2026-02-04)
+
+
+### Features
+
+* enable resuming of interrupted downloads ([4bfcc2c](https://github.com/clelange/cernopendata-client-go/commit/4bfcc2c44a2abdbe3d1d120ed248e62ecd1cd030))
+
+
+### Bug Fixes
+
+* **downloader:** strict resume on retry ([ec56bd1](https://github.com/clelange/cernopendata-client-go/commit/ec56bd129dbcac20428aeb44fa5aab8b0f71b548))
+
 ## [0.6.0](https://github.com/clelange/cernopendata-client-go/compare/v0.5.0...v0.6.0) (2026-02-04)
 
 
