@@ -71,7 +71,6 @@ func (d *Downloader) DownloadFile(url, destPath string, resume bool, expectedSiz
 
 	if resume && existingSize > 0 {
 		req.Header.Set("Range", fmt.Sprintf("bytes=%d-", existingSize))
-		printer.DisplayMessage(printer.Note, fmt.Sprintf("Range: bytes=%d-", existingSize))
 	}
 
 	var lastErr error
@@ -119,13 +118,19 @@ func (d *Downloader) DownloadFile(url, destPath string, resume bool, expectedSiz
 		if d.showProgress {
 			// Use content length from response, or fall back to expected size
 			totalSize := resp.ContentLength
+			isResumed := resume && existingSize > 0 && resp.StatusCode == http.StatusPartialContent
+
+			if isResumed && totalSize > 0 {
+				totalSize += existingSize
+			}
 			if totalSize <= 0 {
 				totalSize = expectedSize
 			}
-			if resume && existingSize > 0 {
-				totalSize -= existingSize // Adjust for resumed portion
-			}
+			// When resuming, totalSize is the full file size
 			pw := progress.NewWriter(file, filepath.Base(destPath), totalSize)
+			if isResumed {
+				pw.SetInitialProgress(existingSize)
+			}
 			written, err = io.Copy(pw, resp.Body)
 			pw.Finish()
 		} else {
@@ -202,10 +207,12 @@ func (d *Downloader) DownloadFiles(files []interface{}, baseDir string, retry in
 
 		destPath := filepath.Join(baseDir, filepath.Base(uri))
 
-		if _, err := os.Stat(destPath); err == nil {
-			printer.DisplayMessage(printer.Note, fmt.Sprintf("File already exists: %s", destPath))
-			stats.SkippedFiles++
-			continue
+		if fi, err := os.Stat(destPath); err == nil {
+			if fi.Size() >= int64(size) {
+				printer.DisplayMessage(printer.Note, fmt.Sprintf("File already exists: %s", destPath))
+				stats.SkippedFiles++
+				continue
+			}
 		}
 
 		result, err := d.DownloadFile(uri, destPath, true, int64(size))

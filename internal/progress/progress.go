@@ -15,6 +15,7 @@ type Writer struct {
 	writer       io.Writer
 	totalBytes   int64
 	writtenBytes int64
+	initialBytes int64
 	startTime    time.Time
 	lastUpdate   time.Time
 	filename     string
@@ -26,14 +27,18 @@ type Writer struct {
 // If totalBytes is 0 or negative, percentage won't be displayed.
 func NewWriter(writer io.Writer, filename string, totalBytes int64) *Writer {
 	return &Writer{
-		writer:      writer,
-		totalBytes:  totalBytes,
-		filename:    filename,
-		startTime:   time.Now(),
-		lastUpdate:  time.Time{},
-		output:      os.Stdout,
-		updateEvery: 200 * time.Millisecond,
+		writer:     writer,
+		totalBytes: totalBytes,
+		filename:   filename,
+		startTime:  time.Now(),
+		lastUpdate: time.Time{},
+		output:     os.Stdout,
 	}
+}
+
+// SetInitialProgress sets the number of bytes already present (for resumed downloads).
+func (pw *Writer) SetInitialProgress(bytes int64) {
+	pw.initialBytes = bytes
 }
 
 // Write implements io.Writer and tracks progress.
@@ -68,18 +73,20 @@ func (pw *Writer) printProgress(final bool) {
 
 	var line string
 	if pw.totalBytes > 0 {
-		percentage := float64(pw.writtenBytes) / float64(pw.totalBytes) * 100
+		currentTotal := pw.writtenBytes + pw.initialBytes
+		percentage := float64(currentTotal) / float64(pw.totalBytes) * 100
 		if percentage > 100 {
 			percentage = 100
 		}
 		totalStr := utils.FormatBytes(float64(pw.totalBytes))
+		currentStr := utils.FormatBytes(float64(currentTotal))
 
 		if final {
 			line = fmt.Sprintf("  -> %s: %.1f%% (%s / %s) [%s avg] in %.1fs",
-				pw.filename, percentage, writtenStr, totalStr, rateStr, elapsed)
+				pw.filename, percentage, currentStr, totalStr, rateStr, elapsed)
 		} else {
 			line = fmt.Sprintf("  -> %s: %.1f%% (%s / %s) [%s]",
-				pw.filename, percentage, writtenStr, totalStr, rateStr)
+				pw.filename, percentage, currentStr, totalStr, rateStr)
 		}
 	} else {
 		// Unknown total size

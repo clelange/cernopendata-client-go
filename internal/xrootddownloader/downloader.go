@@ -55,7 +55,7 @@ func NewDownloader() *Downloader {
 }
 
 // printProgress prints the current download progress.
-func (d *Downloader) printProgress(filename string, downloaded int64, total int64, startTime time.Time, final bool) {
+func (d *Downloader) printProgress(filename string, downloaded int64, initial int64, total int64, startTime time.Time, final bool) {
 	elapsed := time.Since(startTime).Seconds()
 	if elapsed == 0 {
 		elapsed = 0.001 // Avoid division by zero
@@ -67,18 +67,20 @@ func (d *Downloader) printProgress(filename string, downloaded int64, total int6
 
 	var line string
 	if total > 0 {
-		percentage := float64(downloaded) / float64(total) * 100
+		currentTotal := downloaded + initial
+		percentage := float64(currentTotal) / float64(total) * 100
 		if percentage > 100 {
 			percentage = 100
 		}
 		totalStr := utils.FormatBytes(float64(total))
+		currentStr := utils.FormatBytes(float64(currentTotal))
 
 		if final {
 			line = fmt.Sprintf("  -> %s: %.1f%% (%s / %s) [%s avg] in %.1fs",
-				filename, percentage, downloadedStr, totalStr, rateStr, elapsed)
+				filename, percentage, currentStr, totalStr, rateStr, elapsed)
 		} else {
 			line = fmt.Sprintf("  -> %s: %.1f%% (%s / %s) [%s]",
-				filename, percentage, downloadedStr, totalStr, rateStr)
+				filename, percentage, currentStr, totalStr, rateStr)
 		}
 	} else {
 		// Unknown total size
@@ -208,7 +210,7 @@ func (d *Downloader) DownloadFile(ctx context.Context, url, destPath string, res
 
 				// Print progress if enabled
 				if d.showProgress && time.Since(lastProgressUpdate) >= progressUpdateInterval {
-					d.printProgress(filename, copied, expectedSize, startTime, false)
+					d.printProgress(filename, copied, existingSize, expectedSize, startTime, false)
 					lastProgressUpdate = time.Now()
 				}
 			}
@@ -238,7 +240,7 @@ func (d *Downloader) DownloadFile(ctx context.Context, url, destPath string, res
 		}
 
 		if d.showProgress {
-			d.printProgress(filename, copied, expectedSize, startTime, true)
+			d.printProgress(filename, copied, existingSize, expectedSize, startTime, true)
 		}
 
 		if d.verbose {
@@ -303,10 +305,12 @@ func (d *Downloader) DownloadFiles(ctx context.Context, files []interface{}, bas
 
 		destPath := filepath.Join(baseDir, filepath.Base(uri))
 
-		if _, err := os.Stat(destPath); err == nil {
-			printer.DisplayMessage(printer.Note, fmt.Sprintf("File already exists: %s", destPath))
-			stats.SkippedFiles++
-			continue
+		if fi, err := os.Stat(destPath); err == nil {
+			if fi.Size() >= int64(size) {
+				printer.DisplayMessage(printer.Note, fmt.Sprintf("File already exists: %s", destPath))
+				stats.SkippedFiles++
+				continue
+			}
 		}
 
 		result, err := d.DownloadFile(ctx, uri, destPath, true, int64(size))

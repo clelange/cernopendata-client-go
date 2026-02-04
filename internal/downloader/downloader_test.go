@@ -480,7 +480,7 @@ func TestDownloadFilesSkipExisting(t *testing.T) {
 	files := []interface{}{
 		map[string]interface{}{
 			"uri":      server.URL + "/file1.txt",
-			"size":     float64(100),
+			"size":     float64(8),
 			"checksum": "adler32:12345678",
 		},
 	}
@@ -524,5 +524,64 @@ func TestDownloadFilesInvalidEntry(t *testing.T) {
 
 	if stats.SkippedFiles != 1 {
 		t.Errorf("SkippedFiles = %d, want 1 (for invalid entry)", stats.SkippedFiles)
+	}
+}
+
+func TestDownloadFilesResumePartial(t *testing.T) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		rangeHeader := r.Header.Get("Range")
+		if rangeHeader != "" {
+			// Expecting Range: bytes=8-
+			if rangeHeader != "bytes=8-" {
+				t.Errorf("Expected Range header 'bytes=8-', got %q", rangeHeader)
+			}
+			w.WriteHeader(http.StatusPartialContent)
+			_, _ = w.Write([]byte("resumed"))
+		} else {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("full content"))
+		}
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(handler))
+	defer server.Close()
+
+	tmpDir := t.TempDir()
+
+	// Pre-create a partial file
+	destPath := filepath.Join(tmpDir, "file1.txt")
+	// "existing" is 8 bytes
+	if err := os.WriteFile(destPath, []byte("existing"), 0600); err != nil {
+		t.Fatalf("Failed to create partial file: %v", err)
+	}
+
+	files := []interface{}{
+		map[string]interface{}{
+			"uri":      server.URL + "/file1.txt",
+			"size":     float64(15), // "existing" (8) + "resumed" (7) = 15
+			"checksum": "adler32:12345678",
+		},
+	}
+
+	d := &Downloader{
+		client:     server.Client(),
+		retryLimit: 1,
+		retrySleep: 0,
+	}
+
+	stats := d.DownloadFiles(files, tmpDir, 1, 0, false, false, false)
+
+	if stats.DownloadedFiles != 1 {
+		t.Errorf("DownloadedFiles = %d, want 1", stats.DownloadedFiles)
+	}
+
+	if stats.SkippedFiles != 0 {
+		t.Errorf("SkippedFiles = %d, want 0", stats.SkippedFiles)
+	}
+
+	// Verify merged content
+	content, _ := os.ReadFile(destPath) // #nosec G304
+	if string(content) != "existingresumed" {
+		t.Errorf("File content = %q, want 'existingresumed'", string(content))
 	}
 }
