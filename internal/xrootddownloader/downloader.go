@@ -10,8 +10,10 @@ import (
 	"time"
 
 	"go-hep.org/x/hep/xrootd"
+	"go-hep.org/x/hep/xrootd/xrdfs"
 	"go-hep.org/x/hep/xrootd/xrdio"
 
+	"github.com/clelange/cernopendata-client-go/internal/config"
 	"github.com/clelange/cernopendata-client-go/internal/printer"
 	"github.com/clelange/cernopendata-client-go/internal/utils"
 )
@@ -150,7 +152,7 @@ func (d *Downloader) DownloadFile(ctx context.Context, url, destPath string, res
 			offset = existingSize
 		}
 
-		file, err := fs.Open(ctx, parsedURL.Path, 0, 0)
+		file, err := fs.Open(ctx, parsedURL.Path, xrdfs.OpenModeOwnerRead, xrdfs.OpenOptionsOpenRead|xrdfs.OpenOptionsSequentiallyIO)
 		if err != nil {
 			lastErr = err
 			printer.DisplayMessage(printer.Note, fmt.Sprintf("Failed to open file: %v", err))
@@ -174,7 +176,11 @@ func (d *Downloader) DownloadFile(ctx context.Context, url, destPath string, res
 			return nil, fmt.Errorf("failed to open local file: %w", err)
 		}
 
-		buf := make([]byte, 32*1024)
+		bufSize := config.XRootDReadBufferSize
+		if expectedSize > 0 && expectedSize < int64(bufSize) {
+			bufSize = int(expectedSize)
+		}
+		buf := make([]byte, bufSize)
 		var copied int64
 		totalBytes := offset
 		filename := filepath.Base(destPath)

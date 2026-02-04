@@ -12,4 +12,6 @@ const (
 
 	DownloadErrorPageSize     = 3846
 	DownloadErrorPageChecksum = "adler32:a82d5324"
+
+	XRootDReadBufferSize = 16 * 1024 * 1024
 )
