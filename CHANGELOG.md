@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.8.0](https://github.com/clelange/cernopendata-client-go/compare/v0.7.2...v0.8.0) (2026-02-04)
+
+
+### Features
+
+* add JSON output to get-file-locations ([2a51004](https://github.com/clelange/cernopendata-client-go/commit/2a51004098a294b44d302e1da35fa7bf38af155f))
+* add JSON output to list-directory ([2ae04e9](https://github.com/clelange/cernopendata-client-go/commit/2ae04e9e95472310b4ce1f5860b5fc7dcda9e356))
+
+
+### Bug Fixes
+
+* use dynamic map for complete metadata retrieval ([3812f42](https://github.com/clelange/cernopendata-client-go/commit/3812f422003d761efd4a53467e2237a25334cd24))
+
 ## [0.7.2](https://github.com/clelange/cernopendata-client-go/compare/v0.7.1...v0.7.2) (2026-02-04)
 
 
