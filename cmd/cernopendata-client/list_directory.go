@@ -122,5 +122,5 @@ func init() {
 	listDirectoryCmd.Flags().BoolP("verbose", "v", false, "Verbose output")
 	listDirectoryCmd.Flags().BoolP("recursive", "r", false, "Iterate recursively in the given directory path")
 	listDirectoryCmd.Flags().IntP("timeout", "t", config.ListDirectoryTimeout, "Timeout in seconds after which to exit running the command")
-	listDirectoryCmd.Flags().StringP("format", "f", "text", "Output format (text|json)")
+	listDirectoryCmd.Flags().StringP("format", "m", "text", "Output format (text|json)")
 }
