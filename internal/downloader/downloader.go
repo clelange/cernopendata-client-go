@@ -11,6 +11,7 @@ import (
 
 	"github.com/clelange/cernopendata-client-go/internal/config"
 	"github.com/clelange/cernopendata-client-go/internal/printer"
+	"github.com/clelange/cernopendata-client-go/internal/progress"
 )
 
 type DownloadStats struct {
@@ -33,11 +34,12 @@ type FileDownloadResult struct {
 }
 
 type Downloader struct {
-	client     *http.Client
-	retryLimit int
-	retrySleep int
-	verbose    bool
-	dryRun     bool
+	client       *http.Client
+	retryLimit   int
+	retrySleep   int
+	verbose      bool
+	dryRun       bool
+	showProgress bool
 }
 
 func NewDownloader() *Downloader {
@@ -50,7 +52,7 @@ func NewDownloader() *Downloader {
 	}
 }
 
-func (d *Downloader) DownloadFile(url, destPath string, resume bool) (*FileDownloadResult, error) {
+func (d *Downloader) DownloadFile(url, destPath string, resume bool, expectedSize int64) (*FileDownloadResult, error) {
 	var existingSize int64
 
 	if resume {
@@ -113,7 +115,22 @@ func (d *Downloader) DownloadFile(url, destPath string, resume bool) (*FileDownl
 			return nil, fmt.Errorf("failed to open file: %w", err)
 		}
 
-		written, err := io.Copy(file, resp.Body)
+		var written int64
+		if d.showProgress {
+			// Use content length from response, or fall back to expected size
+			totalSize := resp.ContentLength
+			if totalSize <= 0 {
+				totalSize = expectedSize
+			}
+			if resume && existingSize > 0 {
+				totalSize -= existingSize // Adjust for resumed portion
+			}
+			pw := progress.NewWriter(file, filepath.Base(destPath), totalSize)
+			written, err = io.Copy(pw, resp.Body)
+			pw.Finish()
+		} else {
+			written, err = io.Copy(file, resp.Body)
+		}
 		_ = file.Close()
 		_ = resp.Body.Close()
 
@@ -145,11 +162,12 @@ func (d *Downloader) DownloadFile(url, destPath string, resume bool) (*FileDownl
 	}, lastErr
 }
 
-func (d *Downloader) DownloadFiles(files []interface{}, baseDir string, retry int, retrySleep int, verbose bool, dryRun bool) DownloadStats {
+func (d *Downloader) DownloadFiles(files []interface{}, baseDir string, retry int, retrySleep int, verbose bool, dryRun bool, showProgress bool) DownloadStats {
 	d.retryLimit = retry
 	d.retrySleep = retrySleep
 	d.verbose = verbose
 	d.dryRun = dryRun
+	d.showProgress = showProgress
 
 	stats := DownloadStats{}
 	stats.TotalFiles = len(files)
@@ -190,7 +208,7 @@ func (d *Downloader) DownloadFiles(files []interface{}, baseDir string, retry in
 			continue
 		}
 
-		result, err := d.DownloadFile(uri, destPath, true)
+		result, err := d.DownloadFile(uri, destPath, true, int64(size))
 		if err != nil {
 			printer.DisplayMessage(printer.Error, fmt.Sprintf("Failed to download %s: %v", uri, err))
 			stats.FailedFiles++

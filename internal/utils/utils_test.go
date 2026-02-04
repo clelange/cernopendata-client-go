@@ -248,3 +248,27 @@ func TestFormatBytes(t *testing.T) {
 		})
 	}
 }
+
+func TestFormatRate(t *testing.T) {
+	tests := []struct {
+		name           string
+		bytesPerSecond float64
+		want           string
+	}{
+		{"bytes/s", 500, "500 B/s"},
+		{"kilobytes/s", 1024, "1.0 KB/s"},
+		{"kilobytes/s fraction", 1536, "1.5 KB/s"},
+		{"megabytes/s", 1024 * 1024, "1.0 MB/s"},
+		{"gigabytes/s", 1024 * 1024 * 1024, "1.0 GB/s"},
+		{"10 megabytes/s", 10 * 1024 * 1024, "10.0 MB/s"},
+		{"zero", 0, "0 B/s"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := FormatRate(tt.bytesPerSecond); got != tt.want {
+				t.Errorf("FormatRate() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

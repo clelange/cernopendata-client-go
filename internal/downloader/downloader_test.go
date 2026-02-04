@@ -317,7 +317,7 @@ func TestDownloadFile(t *testing.T) {
 				retrySleep: 0,
 			}
 
-			result, err := d.DownloadFile(server.URL+"/testfile.txt", destPath, tt.resume)
+			result, err := d.DownloadFile(server.URL+"/testfile.txt", destPath, tt.resume, 0)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DownloadFile() error = %v, wantErr %v", err, tt.wantErr)
@@ -365,7 +365,7 @@ func TestDownloadFileResume(t *testing.T) {
 		retrySleep: 0,
 	}
 
-	result, err := d.DownloadFile(server.URL+"/testfile.txt", destPath, true)
+	result, err := d.DownloadFile(server.URL+"/testfile.txt", destPath, true, 0)
 	if err != nil {
 		t.Fatalf("DownloadFile() error = %v", err)
 	}
@@ -407,7 +407,7 @@ func TestDownloadFiles(t *testing.T) {
 		retrySleep: 0,
 	}
 
-	stats := d.DownloadFiles(files, tmpDir, 1, 0, false, false)
+	stats := d.DownloadFiles(files, tmpDir, 1, 0, false, false, false)
 
 	if stats.TotalFiles != 2 {
 		t.Errorf("TotalFiles = %d, want 2", stats.TotalFiles)
@@ -449,7 +449,7 @@ func TestDownloadFilesDryRun(t *testing.T) {
 		retrySleep: 0,
 	}
 
-	stats := d.DownloadFiles(files, tmpDir, 1, 0, false, true) // dry-run = true
+	stats := d.DownloadFiles(files, tmpDir, 1, 0, false, true, false) // dry-run = true
 
 	if downloadCount != 0 {
 		t.Errorf("Expected no actual downloads in dry-run mode, but got %d", downloadCount)
@@ -491,7 +491,7 @@ func TestDownloadFilesSkipExisting(t *testing.T) {
 		retrySleep: 0,
 	}
 
-	stats := d.DownloadFiles(files, tmpDir, 1, 0, false, false)
+	stats := d.DownloadFiles(files, tmpDir, 1, 0, false, false, false)
 
 	if stats.SkippedFiles != 1 {
 		t.Errorf("SkippedFiles = %d, want 1", stats.SkippedFiles)
@@ -520,7 +520,7 @@ func TestDownloadFilesInvalidEntry(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	d := NewDownloader()
-	stats := d.DownloadFiles(files, tmpDir, 1, 0, false, true) // dry-run to avoid network
+	stats := d.DownloadFiles(files, tmpDir, 1, 0, false, true, false) // dry-run to avoid network
 
 	if stats.SkippedFiles != 1 {
 		t.Errorf("SkippedFiles = %d, want 1 (for invalid entry)", stats.SkippedFiles)

@@ -159,3 +159,17 @@ func FormatBytes(bytes float64) string {
 	}
 	return fmt.Sprintf("%.1f %cB", bytes/float64(div), "KMGTPE"[exp])
 }
+
+// FormatRate formats a byte rate into a human-readable string (e.g. 10.5 MB/s)
+func FormatRate(bytesPerSecond float64) string {
+	const unit = 1024
+	if bytesPerSecond < unit {
+		return fmt.Sprintf("%.0f B/s", bytesPerSecond)
+	}
+	div, exp := int64(unit), 0
+	for n := bytesPerSecond / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB/s", bytesPerSecond/float64(div), "KMGTPE"[exp])
+}

@@ -116,7 +116,7 @@ func TestDownloadFilesDryRun(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	stats := d.DownloadFiles(ctx, files, "/tmp/test", 3, 2, true, true)
+	stats := d.DownloadFiles(ctx, files, "/tmp/test", 3, 2, true, true, false)
 
 	if stats.TotalFiles != 2 {
 		t.Errorf("Expected TotalFiles 2, got %d", stats.TotalFiles)
@@ -157,7 +157,7 @@ func TestDownloadFilesInvalidEntry(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	stats := d.DownloadFiles(ctx, files, "/tmp/test", 3, 2, true, true)
+	stats := d.DownloadFiles(ctx, files, "/tmp/test", 3, 2, true, true, false)
 
 	if stats.SkippedFiles != 1 {
 		t.Errorf("Expected SkippedFiles 1, got %d", stats.SkippedFiles)

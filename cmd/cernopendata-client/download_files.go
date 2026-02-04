@@ -175,7 +175,12 @@ Examples:
 			defer func() {
 				_ = xrdDownloader.Close()
 			}()
-			xrdStats := xrdDownloader.DownloadFiles(cmd.Context(), fileList, outputDir, retryLimit, retrySleep, verbose, dryRun)
+			// Enable progress when --progress or --verbose flags are set
+			showProgress := verbose
+			if progressFlag, _ := cmd.Flags().GetBool("progress"); progressFlag {
+				showProgress = true
+			}
+			xrdStats := xrdDownloader.DownloadFiles(cmd.Context(), fileList, outputDir, retryLimit, retrySleep, verbose, dryRun, showProgress)
 			stats = downloader.DownloadStats{
 				TotalFiles:      xrdStats.TotalFiles,
 				TotalBytes:      xrdStats.TotalBytes,
@@ -186,7 +191,12 @@ Examples:
 			}
 		} else {
 			httpDownloader := downloader.NewDownloader()
-			stats = httpDownloader.DownloadFiles(fileList, outputDir, retryLimit, retrySleep, verbose, dryRun)
+			// Enable progress when --progress or --verbose flags are set
+			showProgress := verbose
+			if progressFlag, _ := cmd.Flags().GetBool("progress"); progressFlag {
+				showProgress = true
+			}
+			stats = httpDownloader.DownloadFiles(fileList, outputDir, retryLimit, retrySleep, verbose, dryRun, showProgress)
 		}
 
 		if verifyFlag {

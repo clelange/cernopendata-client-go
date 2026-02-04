@@ -6,12 +6,14 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"go-hep.org/x/hep/xrootd"
 	"go-hep.org/x/hep/xrootd/xrdio"
 
 	"github.com/clelange/cernopendata-client-go/internal/printer"
+	"github.com/clelange/cernopendata-client-go/internal/utils"
 )
 
 type DownloadStats struct {
@@ -34,13 +36,14 @@ type FileDownloadResult struct {
 }
 
 type Downloader struct {
-	client     *xrootd.Client
-	retryLimit int
-	retrySleep int
-	verbose    bool
-	dryRun     bool
-	address    string
-	username   string
+	client       *xrootd.Client
+	retryLimit   int
+	retrySleep   int
+	verbose      bool
+	dryRun       bool
+	showProgress bool
+	address      string
+	username     string
 }
 
 func NewDownloader() *Downloader {
@@ -51,7 +54,57 @@ func NewDownloader() *Downloader {
 	}
 }
 
-func (d *Downloader) DownloadFile(ctx context.Context, url, destPath string, resume bool) (*FileDownloadResult, error) {
+// printProgress prints the current download progress.
+func (d *Downloader) printProgress(filename string, downloaded int64, total int64, startTime time.Time, final bool) {
+	elapsed := time.Since(startTime).Seconds()
+	if elapsed == 0 {
+		elapsed = 0.001 // Avoid division by zero
+	}
+
+	rate := float64(downloaded) / elapsed
+	rateStr := utils.FormatRate(rate)
+	downloadedStr := utils.FormatBytes(float64(downloaded))
+
+	var line string
+	if total > 0 {
+		percentage := float64(downloaded) / float64(total) * 100
+		if percentage > 100 {
+			percentage = 100
+		}
+		totalStr := utils.FormatBytes(float64(total))
+
+		if final {
+			line = fmt.Sprintf("  -> %s: %.1f%% (%s / %s) [%s avg] in %.1fs",
+				filename, percentage, downloadedStr, totalStr, rateStr, elapsed)
+		} else {
+			line = fmt.Sprintf("  -> %s: %.1f%% (%s / %s) [%s]",
+				filename, percentage, downloadedStr, totalStr, rateStr)
+		}
+	} else {
+		// Unknown total size
+		if final {
+			line = fmt.Sprintf("  -> %s: %s [%s avg] in %.1fs",
+				filename, downloadedStr, rateStr, elapsed)
+		} else {
+			line = fmt.Sprintf("  -> %s: %s [%s]",
+				filename, downloadedStr, rateStr)
+		}
+	}
+
+	// Pad with spaces to overwrite any previous longer line
+	padding := 80 - len(line)
+	if padding > 0 {
+		line += strings.Repeat(" ", padding)
+	}
+
+	if final {
+		_, _ = fmt.Printf("\r%s\n", line)
+	} else {
+		_, _ = fmt.Printf("\r%s", line)
+	}
+}
+
+func (d *Downloader) DownloadFile(ctx context.Context, url, destPath string, resume bool, expectedSize int64) (*FileDownloadResult, error) {
 	var existingSize int64
 
 	if resume {
@@ -122,6 +175,10 @@ func (d *Downloader) DownloadFile(ctx context.Context, url, destPath string, res
 		buf := make([]byte, 32*1024)
 		var copied int64
 		totalBytes := offset
+		filename := filepath.Base(destPath)
+		startTime := time.Now()
+		lastProgressUpdate := time.Time{}
+		progressUpdateInterval := 200 * time.Millisecond
 
 	retryLoop:
 		for {
@@ -148,6 +205,12 @@ func (d *Downloader) DownloadFile(ctx context.Context, url, destPath string, res
 				}
 				copied += int64(n)
 				totalBytes += int64(n)
+
+				// Print progress if enabled
+				if d.showProgress && time.Since(lastProgressUpdate) >= progressUpdateInterval {
+					d.printProgress(filename, copied, expectedSize, startTime, false)
+					lastProgressUpdate = time.Now()
+				}
 			}
 			if err == io.EOF {
 				break retryLoop
@@ -174,6 +237,10 @@ func (d *Downloader) DownloadFile(ctx context.Context, url, destPath string, res
 			continue
 		}
 
+		if d.showProgress {
+			d.printProgress(filename, copied, expectedSize, startTime, true)
+		}
+
 		if d.verbose {
 			printer.DisplayMessage(printer.Note, fmt.Sprintf("Downloaded %d bytes to %s", copied, destPath))
 		}
@@ -196,11 +263,12 @@ func (d *Downloader) DownloadFile(ctx context.Context, url, destPath string, res
 	}, lastErr
 }
 
-func (d *Downloader) DownloadFiles(ctx context.Context, files []interface{}, baseDir string, retry int, retrySleep int, verbose bool, dryRun bool) DownloadStats {
+func (d *Downloader) DownloadFiles(ctx context.Context, files []interface{}, baseDir string, retry int, retrySleep int, verbose bool, dryRun bool, showProgress bool) DownloadStats {
 	d.retryLimit = retry
 	d.retrySleep = retrySleep
 	d.verbose = verbose
 	d.dryRun = dryRun
+	d.showProgress = showProgress
 
 	stats := DownloadStats{}
 	stats.TotalFiles = len(files)
@@ -241,7 +309,7 @@ func (d *Downloader) DownloadFiles(ctx context.Context, files []interface{}, bas
 			continue
 		}
 
-		result, err := d.DownloadFile(ctx, uri, destPath, true)
+		result, err := d.DownloadFile(ctx, uri, destPath, true, int64(size))
 		if err != nil {
 			printer.DisplayMessage(printer.Error, fmt.Sprintf("Failed to download %s: %v", uri, err))
 			stats.FailedFiles++
