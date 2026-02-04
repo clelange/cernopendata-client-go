@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/clelange/cernopendata-client-go/compare/v0.5.0...v0.6.0) (2026-02-04)
+
+
+### Features
+
+* **download:** add real-time progress display for file downloads ([c8dd5b2](https://github.com/clelange/cernopendata-client-go/commit/c8dd5b25ceef66d73862f2f7f8c6c5950e7c2f48))
+
 ## [0.5.0](https://github.com/clelange/cernopendata-client-go/compare/v0.4.1...v0.5.0) (2026-01-20)
 
 
