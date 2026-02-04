@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/clelange/cernopendata-client-go/internal/config"
 )
@@ -102,7 +103,7 @@ type Client struct {
 func NewClient(server string) *Client {
 	return &Client{
 		server: server,
-		client: &http.Client{},
+		client: &http.Client{Timeout: 30 * time.Second},
 	}
 }
 
