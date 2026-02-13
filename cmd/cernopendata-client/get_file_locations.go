@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -27,7 +28,9 @@ Examples:
 
      $ cernopendata-client get-file-locations --recid 5500 --verbose
 
-     $ cernopendata-client get-file-locations --recid 8886 --file-availability online`,
+     $ cernopendata-client get-file-locations --recid 8886 --file-availability online
+
+     $ cernopendata-client get-file-locations --recid 5500 --format json`,
 	Run: func(cmd *cobra.Command, args []string) {
 		recid, err := cmd.Flags().GetInt("recid")
 		if err != nil {
@@ -42,9 +45,15 @@ Examples:
 		verbose, _ := cmd.Flags().GetBool("verbose")
 		fileAvailability, _ := cmd.Flags().GetString("file-availability")
 		server, _ := cmd.Flags().GetString("server")
+		outputFormat, _ := cmd.Flags().GetString("format")
 
 		if fileAvailability != "" && fileAvailability != "online" && fileAvailability != "all" {
 			printer.DisplayMessage(printer.Error, fmt.Sprintf("Invalid file availability: %s (choose from 'online', 'all')", fileAvailability))
+			os.Exit(1)
+		}
+
+		if outputFormat != "text" && outputFormat != "json" {
+			printer.DisplayMessage(printer.Error, fmt.Sprintf("Invalid format: %s (choose from 'text', 'json')", outputFormat))
 			os.Exit(1)
 		}
 
@@ -89,6 +98,33 @@ Examples:
 			files = filteredFiles
 		}
 
+		if outputFormat == "json" {
+			type FileOutput struct {
+				URI          string `json:"uri"`
+				Size         int64  `json:"size,omitempty"`
+				Checksum     string `json:"checksum,omitempty"`
+				Availability string `json:"availability,omitempty"`
+			}
+
+			var output []FileOutput
+			for _, file := range files {
+				output = append(output, FileOutput{
+					URI:          file.URI,
+					Size:         file.Size,
+					Checksum:     file.Checksum,
+					Availability: file.Availability,
+				})
+			}
+
+			jsonBytes, err := json.MarshalIndent(output, "", "  ")
+			if err != nil {
+				printer.DisplayMessage(printer.Error, fmt.Sprintf("Failed to marshal JSON: %v", err))
+				os.Exit(1)
+			}
+			printer.DisplayOutput(string(jsonBytes))
+			return
+		}
+
 		for _, file := range files {
 			if verbose {
 				printer.DisplayOutput(fmt.Sprintf("%s\t%d\t%s\t%s", file.URI, file.Size, file.Checksum, file.Availability))
@@ -109,4 +145,5 @@ func init() {
 	getFileLocationsCmd.Flags().BoolP("verbose", "V", false, "Output also the file size (2nd), checksum (3rd), and availability (4th)")
 	getFileLocationsCmd.Flags().StringP("file-availability", "", "", "Filter files by their availability status [online, all]")
 	getFileLocationsCmd.Flags().StringP("server", "S", "", "Which CERN Open Data server to query? [default=http://opendata.cern.ch]")
+	getFileLocationsCmd.Flags().StringP("format", "m", "text", "Output format (text|json)")
 }
