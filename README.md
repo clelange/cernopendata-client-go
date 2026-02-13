@@ -111,14 +111,6 @@ brew tap clelange/particle-physics
 brew install cernopendata-client
 ```
 
-This includes shell completion for bash and zsh automatically.
-
-To update:
-
-```bash
-brew upgrade cernopendata-client
-```
-
 ### Option 2: One-line install script (Linux/macOS)
 
 The fastest way to install on Linux or macOS:
@@ -132,7 +124,7 @@ This script will:
 - Detect your OS and architecture
 - Download latest release binary
 - Verify checksum
-- Install to `/usr/local/bin`, `~/bin`, or `~/.local/bin` (based on permissions)
+- Install to `/usr/local/bin`, `~/bin`, or `~/.local/bin` (in this order, based on permissions)
 - Automatically configure your PATH if needed
 
 ### Option 3: Building from Source
@@ -157,11 +149,11 @@ Shell completion is included automatically with the Homebrew installation. For o
 
 ```bash
 # Generate bash completion script
-./cernopendata-client completion bash > /tmp/cernopendata-client.bash
+cernopendata-client completion bash > /tmp/cernopendata-client.bash
 source /tmp/cernopendata-client.bash
 
 # Generate zsh completion script
-./cernopendata-client completion zsh > ~/.zsh/completions/_cernopendata-client
+cernopendata-client completion zsh > ~/.zsh/completions/_cernopendata-client
 
 # Add to .zshrc for automatic loading
 echo "fpath=(~/.zsh/completions \$fpath)" >> ~/.zshrc
@@ -170,7 +162,8 @@ echo "autoload -U compinit && compinit" >> ~/.zshrc
 
 ### XRootD Support
 
-XRootD downloads are fully supported using the `--download-engine xrootd` flag. The Go XRootD client (`go-hep.org/x/hep/xrootd`) is automatically downloaded when building the binary.
+XRootD downloads are fully supported using the `--download-engine xrootd` flag.
+The Go XRootD client (`go-hep.org/x/hep/xrootd`) is automatically downloaded when building the binary.
 
 No additional system-level XRootD libraries are required - the implementation uses a pure Go XRootD client.
 
@@ -179,17 +172,17 @@ No additional system-level XRootD libraries are required - the implementation us
 ### Version
 
 ```bash
-./cernopendata-client version
+cernopendata-client version
 ```
 
 ### Update
 
 ```bash
 # Check for updates
-./cernopendata-client update --check
+cernopendata-client update --check
 
 # Install updates
-./cernopendata-client update
+cernopendata-client update
 ```
 
 **Note:** If you installed via Homebrew, use `brew upgrade cernopendata-client-go` instead.
@@ -205,94 +198,94 @@ The update command will:
 
 ```bash
 # Get full metadata
-./cernopendata-client get-metadata --recid 3005
+cernopendata-client get-metadata --recid 3005
 
 # Get specific field
-./cernopendata-client get-metadata --recid 3005 --output-value title
+cernopendata-client get-metadata --recid 3005 --output-value title
 
 # Get metadata in JSON format
-./cernopendata-client get-metadata --recid 3005 --format json
+cernopendata-client get-metadata --recid 3005 --format json
 
 # Filter metadata
-./cernopendata-client get-metadata --recid 3005 --filter type=Primary
+cernopendata-client get-metadata --recid 3005 --filter type=Primary
 
 # By DOI or title
-./cernopendata-client get-metadata --doi "10.7483/record/5500"
-./cernopendata-client get-metadata --title "CMS Open Data"
+cernopendata-client get-metadata --doi "10.7483/record/5500"
+cernopendata-client get-metadata --title "CMS Open Data"
 ```
 
 ### Get File Locations
 
 ```bash
 # List files
-./cernopendata-client get-file-locations --recid 5500
+cernopendata-client get-file-locations --recid 5500
 
 # Verbose output (includes size, checksum, and availability)
-./cernopendata-client get-file-locations --recid 5500 --verbose
+cernopendata-client get-file-locations --recid 5500 --verbose
 
 # Use HTTPS protocol
-./cernopendata-client get-file-locations --recid 5500 --protocol https
+cernopendata-client get-file-locations --recid 5500 --protocol https
 
 # Expand file indices
-./cernopendata-client get-file-locations --recid 5500 --expand
+cernopendata-client get-file-locations --recid 5500 --expand
 
 # JSON output format
-./cernopendata-client get-file-locations --recid 5500 --format json
+cernopendata-client get-file-locations --recid 5500 --format json
 
 # Filter by file availability (online files only)
-./cernopendata-client get-file-locations --recid 8886 --file-availability online
+cernopendata-client get-file-locations --recid 8886 --file-availability online
 
 # Include all files (online and on tape)
-./cernopendata-client get-file-locations --recid 8886 --file-availability all
+cernopendata-client get-file-locations --recid 8886 --file-availability all
 ```
 
 ### Download Files
 
 ```bash
 # Download all files
-./cernopendata-client download-files --recid 5500
+cernopendata-client download-files --recid 5500
 
 # Download to specific directory
-./cernopendata-client download-files --recid 5500 --output-dir ./data
+cernopendata-client download-files --recid 5500 --output-dir data
 
 # Filter by name pattern (glob)
-./cernopendata-client download-files --recid 5500 --filter-name "*.root"
+cernopendata-client download-files --recid 5500 --filter-name "*.root"
 
 # Filter by regex pattern
-./cernopendata-client download-files --recid 5500 --filter-regexp ".*\\.root$"
+cernopendata-client download-files --recid 5500 --filter-regexp ".*\\.root$"
 
 # Multiple name filters (comma-separated)
-./cernopendata-client download-files --recid 5500 --filter-name "*.root,*.txt"
+cernopendata-client download-files --recid 5500 --filter-name "*.root,*.txt"
 
 # Multiple range filters
-./cernopendata-client download-files --recid 5500 --filter-range 1-5,10-15
+cernopendata-client download-files --recid 5500 --filter-range 1-5,10-15
 
 # Dry run (don't actually download)
-./cernopendata-client download-files --recid 5500 --dry-run
+cernopendata-client download-files --recid 5500 --dry-run
 
 # Configure retry attempts and sleep duration
-./cernopendata-client download-files --recid 5500 --retry-limit 5 --retry-sleep 2
+cernopendata-client download-files --recid 5500 --retry-limit 5 --retry-sleep 2
 
 # Verify files after download
-./cernopendata-client download-files --recid 5500 --verify
+cernopendata-client download-files --recid 5500 --verify
 
 # Download using XRootD protocol
-./cernopendata-client download-files --recid 5500 --download-engine xrootd
+cernopendata-client download-files --recid 5500 --download-engine xrootd
 
 # Expand file indices
-./cernopendata-client download-files --recid 5500 --expand
+cernopendata-client download-files --recid 5500 --expand
 
 # Don't expand file indices
-./cernopendata-client download-files --recid 5500 --no-expand
+cernopendata-client download-files --recid 5500 --no-expand
 
 # Show progress
-./cernopendata-client download-files --recid 5500 --progress
+cernopendata-client download-files --recid 5500 --progress
 
 # Download only online files (skip tape-based files)
-./cernopendata-client download-files --recid 8886 --file-availability online
+cernopendata-client download-files --recid 8886 --file-availability online
 
 # Force download all files including those on tape (may fail if not staged)
-./cernopendata-client download-files --recid 8886 --file-availability all
+cernopendata-client download-files --recid 8886 --file-availability all
 ```
 
 **File Availability Note**: By default, the client will warn you about files stored on tape and skip them automatically. You'll see:
@@ -307,71 +300,71 @@ Use `--file-availability online` to explicitly filter to online files only, or `
 
 ```bash
 # Verify downloaded files
-./cernopendata-client verify-files --recid 5500 --input-dir ./data
+cernopendata-client verify-files --recid 5500 --input-dir data
 
 # Verify only specific files by glob pattern
-./cernopendata-client verify-files --recid 5500 --input-dir ./data --filter-name "*.root"
+cernopendata-client verify-files --recid 5500 --input-dir data --filter-name "*.root"
 
 # Verify only specific files by regex pattern
-./cernopendata-client verify-files --recid 5500 --input-dir ./data --filter-regexp ".*\\.root$"
+cernopendata-client verify-files --recid 5500 --input-dir data --filter-regexp ".*\\.root$"
 ```
 
 ### List Directory (XRootD)
 
 ```bash
 # List XRootD directory
-./cernopendata-client list-directory /eos/opendata/cms
+cernopendata-client list-directory /eos/opendata/cms
 
 # Verbose output (includes size and modification time)
-./cernopendata-client list-directory /eos/opendata/cms --verbose
+cernopendata-client list-directory /eos/opendata/cms --verbose
 
 # List directory recursively
-./cernopendata-client list-directory /eos/opendata/cms --recursive
+cernopendata-client list-directory /eos/opendata/cms --recursive
 
 # List directory with custom timeout (seconds)
-./cernopendata-client list-directory /eos/opendata/cms --timeout 60
+cernopendata-client list-directory /eos/opendata/cms --timeout 60
 
 # JSON output format
-./cernopendata-client list-directory /eos/opendata/cms --format json
+cernopendata-client list-directory /eos/opendata/cms --format json
 
 # Full XRootD URLs are also supported
-./cernopendata-client list-directory root://eospublic.cern.ch//eos/opendata/cms
+cernopendata-client list-directory root://eospublic.cern.ch//eos/opendata/cms
 ```
 
 ### Search Records
 
 ```bash
 # Basic search
-./cernopendata-client search --query-pattern "Higgs"
+cernopendata-client search --query-pattern "Higgs"
 
 # Search with facet filter
-./cernopendata-client search --query-pattern "muon" --query-facet experiment=CMS
+cernopendata-client search --query-pattern "muon" --query-facet experiment=CMS
 
 # Multiple facets
-./cernopendata-client search --query-pattern "electron" --query-facet experiment=CMS --query-facet type=Dataset
+cernopendata-client search --query-pattern "electron" --query-facet experiment=CMS --query-facet type=Dataset
 
 # Copy-paste URL from portal
-./cernopendata-client search --query "q=online&f=experiment%3ACMS"
+cernopendata-client search --query "q=online&f=experiment%3ACMS"
 
 # Extract specific field from results
-./cernopendata-client search --query-pattern "Higgs" --output-value title
+cernopendata-client search --query-pattern "Higgs" --output-value title
 
 # JSON output format
-./cernopendata-client search --query-pattern "Higgs" --output-value title --format json
+cernopendata-client search --query-pattern "Higgs" --output-value title --format json
 
 # Fetch all results (batched)
-./cernopendata-client search --query-pattern "/TT*" --query-facet experiment=CMS --size -1
+cernopendata-client search --query-pattern "/TT*" --query-facet experiment=CMS --size -1
 
 # Custom page size
-./cernopendata-client search --query-pattern "muon" --size 50
+cernopendata-client search --query-pattern "muon" --size 50
 
 # Advanced search syntax (see https://opendata.cern.ch/docs/cod-search-tips)
-./cernopendata-client search --query-pattern "title.tokens:*muon*"
-./cernopendata-client search --query-pattern "doi:10.7483*"
-./cernopendata-client search --query-pattern "heavy ion -electron"
+cernopendata-client search --query-pattern "title.tokens:*muon*"
+cernopendata-client search --query-pattern "doi:10.7483*"
+cernopendata-client search --query-pattern "heavy ion -electron"
 
 # Discover available facets
-./cernopendata-client search --list-facets
+cernopendata-client search --list-facets
 ```
 
 ## Development
