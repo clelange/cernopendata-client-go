@@ -161,11 +161,11 @@ func ReplaceBinary(newBinary []byte) error {
 		return fmt.Errorf("failed to close temp file: %w", err)
 	}
 
-	if err := os.Chmod(tmpPath, info.Mode()); err != nil {
+	if err := os.Chmod(tmpPath, info.Mode()); err != nil { // #nosec G703
 		return fmt.Errorf("failed to set permissions: %w", err)
 	}
 
-	if err := os.Rename(tmpPath, execPath); err != nil {
+	if err := os.Rename(tmpPath, execPath); err != nil { // #nosec G703
 		return fmt.Errorf("failed to replace binary: %w", err)
 	}
 

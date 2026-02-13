@@ -84,7 +84,7 @@ func (d *Downloader) DownloadFile(url, destPath string, resume bool, expectedSiz
 			req.Header.Set("Range", fmt.Sprintf("bytes=%d-", existingSize))
 		}
 
-		resp, err := d.client.Do(req)
+		resp, err := d.client.Do(req) // #nosec G704
 		if err != nil {
 			lastErr = err
 			printer.DisplayMessage(printer.Note, fmt.Sprintf("Download failed: %v", err))

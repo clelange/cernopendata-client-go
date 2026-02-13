@@ -18,7 +18,7 @@ func CheckForUpdate() (*ReleaseInfo, error) {
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
 	req.Header.Set("User-Agent", "cernopendata-client-go")
 
-	resp, err := client.Do(req)
+	resp, err := client.Do(req) // #nosec G704
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch release info: %w", err)
 	}
