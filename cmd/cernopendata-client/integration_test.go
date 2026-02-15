@@ -1578,6 +1578,12 @@ func TestIntegrationSearchListFacetsWithServer(t *testing.T) {
 }
 
 func TestIntegrationUpdateCheck(t *testing.T) {
+	// Skip on macOS due to intermittent GitHub API 403 errors on GitHub Actions macOS runners.
+	// The test runs successfully on Linux, so we only skip on darwin/macOS.
+	if runtime.GOOS == "darwin" {
+		t.Skip("Skipping update check test on macOS due to intermittent GitHub API failures")
+	}
+
 	output := assertCommandSuccess(t, "update", "--check")
 	if !strings.Contains(output, "Current version:") {
 		t.Error("Expected 'Current version:' in output")
