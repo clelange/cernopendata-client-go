@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.9.0](https://github.com/clelange/cernopendata-client-go/compare/v0.8.1...v0.9.0) (2026-02-15)
+
+
+### Features
+
+* **cli:** restore JSON format output for get-file-locations and list-directory ([385151d](https://github.com/clelange/cernopendata-client-go/commit/385151dbd93995ebb1289161bd6033c7f24e5664))
+
+
+### Bug Fixes
+
+* **security:** address gosec findings in downloader/updater ([2d817c4](https://github.com/clelange/cernopendata-client-go/commit/2d817c4d94d360da2274159ae96e029feeb41ba5))
+
 ## [0.8.1](https://github.com/clelange/cernopendata-client-go/compare/v0.8.0...v0.8.1) (2026-02-04)
 
 
