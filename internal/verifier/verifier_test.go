@@ -41,8 +41,8 @@ func TestVerifyFiles(t *testing.T) {
 	}
 
 	verifier := NewVerifier()
-	expectedFiles := []interface{}{
-		map[string]interface{}{
+	expectedFiles := []any{
+		map[string]any{
 			"uri":      "http://example.com/test.txt",
 			"size":     float64(len(content)),
 			"checksum": "adler32:08879620",

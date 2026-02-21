@@ -174,7 +174,7 @@ func (d *Downloader) DownloadFile(url, destPath string, resume bool, expectedSiz
 	}, lastErr
 }
 
-func (d *Downloader) DownloadFiles(files []interface{}, baseDir string, retry int, retrySleep int, verbose bool, dryRun bool, showProgress bool) DownloadStats {
+func (d *Downloader) DownloadFiles(files []any, baseDir string, retry int, retrySleep int, verbose bool, dryRun bool, showProgress bool) DownloadStats {
 	d.retryLimit = retry
 	d.retrySleep = retrySleep
 	d.verbose = verbose
@@ -190,7 +190,7 @@ func (d *Downloader) DownloadFiles(files []interface{}, baseDir string, retry in
 	}
 
 	for i, file := range files {
-		fileMap, ok := file.(map[string]interface{})
+		fileMap, ok := file.(map[string]any)
 		if !ok {
 			printer.DisplayMessage(printer.Note, fmt.Sprintf("Skipping invalid file entry %d", i))
 			stats.SkippedFiles++
@@ -242,18 +242,18 @@ func (d *Downloader) DownloadFiles(files []interface{}, baseDir string, retry in
 	return stats
 }
 
-func ParseFileList(files []interface{}) []interface{} {
+func ParseFileList(files []any) []any {
 	return files
 }
 
-func FilterFiles(files []interface{}, filter string) []interface{} {
+func FilterFiles(files []any, filter string) []any {
 	if filter == "" {
 		return files
 	}
 
-	var result []interface{}
+	var result []any
 	for _, file := range files {
-		fileMap, ok := file.(map[string]interface{})
+		fileMap, ok := file.(map[string]any)
 		if !ok {
 			continue
 		}
@@ -271,7 +271,7 @@ func FilterFiles(files []interface{}, filter string) []interface{} {
 	return result
 }
 
-func FilterFilesByRange(files []interface{}, start, end int) []interface{} {
+func FilterFilesByRange(files []any, start, end int) []any {
 	if start < 0 || end < 0 {
 		return files
 	}
@@ -279,7 +279,7 @@ func FilterFilesByRange(files []interface{}, start, end int) []interface{} {
 	total := len(files)
 
 	if start >= total {
-		return []interface{}{}
+		return []any{}
 	}
 
 	if end > total {
@@ -287,18 +287,18 @@ func FilterFilesByRange(files []interface{}, start, end int) []interface{} {
 	}
 
 	if start > end {
-		return []interface{}{}
+		return []any{}
 	}
 
 	return files[start:end]
 }
 
-func FilterFilesByMultipleRanges(files []interface{}, ranges [][2]int) []interface{} {
+func FilterFilesByMultipleRanges(files []any, ranges [][2]int) []any {
 	if len(ranges) == 0 {
 		return files
 	}
 
-	var result []interface{}
+	var result []any
 	for _, r := range ranges {
 		start := r[0]
 		end := r[1]
@@ -314,12 +314,12 @@ func FilterFilesByMultipleRanges(files []interface{}, ranges [][2]int) []interfa
 	return result
 }
 
-func FilterFilesByMultipleNames(files []interface{}, filters []string) []interface{} {
+func FilterFilesByMultipleNames(files []any, filters []string) []any {
 	if len(filters) == 0 {
 		return files
 	}
 
-	var result []interface{}
+	var result []any
 	for _, filter := range filters {
 		filtered := FilterFiles(files, filter)
 		result = append(result, filtered...)
@@ -328,7 +328,7 @@ func FilterFilesByMultipleNames(files []interface{}, filters []string) []interfa
 	return result
 }
 
-func FilterFilesByRegex(files []interface{}, pattern string) []interface{} {
+func FilterFilesByRegex(files []any, pattern string) []any {
 	if pattern == "" {
 		return files
 	}
@@ -338,9 +338,9 @@ func FilterFilesByRegex(files []interface{}, pattern string) []interface{} {
 		return files
 	}
 
-	var result []interface{}
+	var result []any
 	for _, file := range files {
-		fileMap, ok := file.(map[string]interface{})
+		fileMap, ok := file.(map[string]any)
 		if !ok {
 			continue
 		}

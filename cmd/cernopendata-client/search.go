@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"strings"
 
@@ -97,9 +98,7 @@ Examples:
 			if queryPattern == "" && parsedQuery.Q != "" {
 				queryPattern = parsedQuery.Q
 			}
-			for k, v := range parsedQuery.Facets {
-				facetsMap[k] = v
-			}
+			maps.Copy(facetsMap, parsedQuery.Facets)
 			if parsedQuery.Page != nil && !cmd.Flags().Changed("page") {
 				page = *parsedQuery.Page
 			}
@@ -165,7 +164,7 @@ Examples:
 			}
 		} else {
 			// Extract specific field from each record
-			var results []interface{}
+			var results []any
 			for _, hit := range searchResp.Hits.Hits {
 				value, err := metadater.ExtractNestedField(hit.Metadata, outputValue)
 				if err == nil && value != nil {

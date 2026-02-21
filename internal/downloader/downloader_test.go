@@ -32,10 +32,10 @@ func TestNewDownloader(t *testing.T) {
 }
 
 func TestFilterFiles(t *testing.T) {
-	files := []interface{}{
-		map[string]interface{}{"uri": "/path/file1.txt"},
-		map[string]interface{}{"uri": "/path/file2.csv"},
-		map[string]interface{}{"uri": "/path/file3.log"},
+	files := []any{
+		map[string]any{"uri": "/path/file1.txt"},
+		map[string]any{"uri": "/path/file2.csv"},
+		map[string]any{"uri": "/path/file3.log"},
 	}
 
 	tests := []struct {
@@ -59,7 +59,7 @@ func TestFilterFiles(t *testing.T) {
 }
 
 func TestFilterFilesByRange(t *testing.T) {
-	files := []interface{}{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+	files := []any{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 
 	tests := []struct {
 		name     string
@@ -132,10 +132,10 @@ func TestFileDownloadResult(t *testing.T) {
 }
 
 func TestFilterFilesByMultipleNames(t *testing.T) {
-	fileLocations := []interface{}{
-		map[string]interface{}{"uri": "http://example.com/a.txt"},
-		map[string]interface{}{"uri": "http://example.com/b.txt"},
-		map[string]interface{}{"uri": "http://example.com/c.py"},
+	fileLocations := []any{
+		map[string]any{"uri": "http://example.com/a.txt"},
+		map[string]any{"uri": "http://example.com/b.txt"},
+		map[string]any{"uri": "http://example.com/c.py"},
 	}
 
 	result := FilterFilesByMultipleNames(fileLocations, []string{"a.txt", "c.py"})
@@ -149,7 +149,7 @@ func TestFilterFilesByMultipleNames(t *testing.T) {
 	}
 
 	for _, file := range result {
-		fileMap, ok := file.(map[string]interface{})
+		fileMap, ok := file.(map[string]any)
 		if !ok {
 			t.Errorf("File is not a map")
 			continue
@@ -166,10 +166,10 @@ func TestFilterFilesByMultipleNames(t *testing.T) {
 }
 
 func TestFilterFilesByRegex(t *testing.T) {
-	fileLocations := []interface{}{
-		map[string]interface{}{"uri": "http://example.com/a.py"},
-		map[string]interface{}{"uri": "http://example.com/b.txt"},
-		map[string]interface{}{"uri": "http://example.com/c.py"},
+	fileLocations := []any{
+		map[string]any{"uri": "http://example.com/a.py"},
+		map[string]any{"uri": "http://example.com/b.txt"},
+		map[string]any{"uri": "http://example.com/c.py"},
 	}
 
 	result := FilterFilesByRegex(fileLocations, `\.py$`)
@@ -178,7 +178,7 @@ func TestFilterFilesByRegex(t *testing.T) {
 	}
 
 	for _, file := range result {
-		fileMap, ok := file.(map[string]interface{})
+		fileMap, ok := file.(map[string]any)
 		if !ok {
 			t.Errorf("File is not a map")
 			continue
@@ -195,9 +195,9 @@ func TestFilterFilesByRegex(t *testing.T) {
 }
 
 func TestFilterFilesByRegexNoMatch(t *testing.T) {
-	fileLocations := []interface{}{
-		map[string]interface{}{"uri": "http://example.com/a.txt"},
-		map[string]interface{}{"uri": "http://example.com/b.txt"},
+	fileLocations := []any{
+		map[string]any{"uri": "http://example.com/a.txt"},
+		map[string]any{"uri": "http://example.com/b.txt"},
 	}
 
 	result := FilterFilesByRegex(fileLocations, `\.py$`)
@@ -207,10 +207,10 @@ func TestFilterFilesByRegexNoMatch(t *testing.T) {
 }
 
 func TestFilterFilesByRangeSingleFile(t *testing.T) {
-	fileLocations := []interface{}{
-		map[string]interface{}{"uri": "http://example.com/file1.txt"},
-		map[string]interface{}{"uri": "http://example.com/file2.txt"},
-		map[string]interface{}{"uri": "http://example.com/file3.txt"},
+	fileLocations := []any{
+		map[string]any{"uri": "http://example.com/file1.txt"},
+		map[string]any{"uri": "http://example.com/file2.txt"},
+		map[string]any{"uri": "http://example.com/file3.txt"},
 	}
 
 	ranges, _ := utils.ParseRanges([]string{"2-2"})
@@ -220,7 +220,7 @@ func TestFilterFilesByRangeSingleFile(t *testing.T) {
 	}
 
 	if len(result) > 0 {
-		fileMap, ok := result[0].(map[string]interface{})
+		fileMap, ok := result[0].(map[string]any)
 		if ok {
 			uri, _ := fileMap["uri"].(string)
 			if uri != "http://example.com/file2.txt" {
@@ -231,9 +231,9 @@ func TestFilterFilesByRangeSingleFile(t *testing.T) {
 }
 
 func TestFilterFilesByRangeWithFilteredFiles(t *testing.T) {
-	filteredFiles := []interface{}{
-		map[string]interface{}{"uri": "http://example.com/file1.txt"},
-		map[string]interface{}{"uri": "http://example.com/file3.txt"},
+	filteredFiles := []any{
+		map[string]any{"uri": "http://example.com/file1.txt"},
+		map[string]any{"uri": "http://example.com/file3.txt"},
 	}
 
 	ranges, _ := utils.ParseRanges([]string{"1-2"})
@@ -248,7 +248,7 @@ func TestFilterFilesByRangeWithFilteredFiles(t *testing.T) {
 	}
 
 	for _, file := range result {
-		fileMap, ok := file.(map[string]interface{})
+		fileMap, ok := file.(map[string]any)
 		if !ok {
 			continue
 		}
@@ -452,13 +452,13 @@ func TestDownloadFiles(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(handler))
 	defer server.Close()
 
-	files := []interface{}{
-		map[string]interface{}{
+	files := []any{
+		map[string]any{
 			"uri":      server.URL + "/file1.txt",
 			"size":     float64(12),
 			"checksum": "adler32:12345678",
 		},
-		map[string]interface{}{
+		map[string]any{
 			"uri":      server.URL + "/file2.txt",
 			"size":     float64(12),
 			"checksum": "adler32:87654321",
@@ -499,8 +499,8 @@ func TestDownloadFilesDryRun(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(handler))
 	defer server.Close()
 
-	files := []interface{}{
-		map[string]interface{}{
+	files := []any{
+		map[string]any{
 			"uri":      server.URL + "/file1.txt",
 			"size":     float64(100),
 			"checksum": "adler32:12345678",
@@ -543,8 +543,8 @@ func TestDownloadFilesSkipExisting(t *testing.T) {
 		t.Fatalf("Failed to create existing file: %v", err)
 	}
 
-	files := []interface{}{
-		map[string]interface{}{
+	files := []any{
+		map[string]any{
 			"uri":      server.URL + "/file1.txt",
 			"size":     float64(8),
 			"checksum": "adler32:12345678",
@@ -575,9 +575,9 @@ func TestDownloadFilesSkipExisting(t *testing.T) {
 }
 
 func TestDownloadFilesInvalidEntry(t *testing.T) {
-	files := []interface{}{
+	files := []any{
 		"not a map", // invalid entry
-		map[string]interface{}{
+		map[string]any{
 			"uri":  "http://example.com/file.txt",
 			"size": float64(100),
 		},
@@ -621,8 +621,8 @@ func TestDownloadFilesResumePartial(t *testing.T) {
 		t.Fatalf("Failed to create partial file: %v", err)
 	}
 
-	files := []interface{}{
-		map[string]interface{}{
+	files := []any{
+		map[string]any{
 			"uri":      server.URL + "/file1.txt",
 			"size":     float64(15), // "existing" (8) + "resumed" (7) = 15
 			"checksum": "adler32:12345678",

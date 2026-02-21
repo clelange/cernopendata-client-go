@@ -8,36 +8,36 @@ import (
 func TestExtractNestedField(t *testing.T) {
 	tests := []struct {
 		name     string
-		data     interface{}
+		data     any
 		path     string
-		expected interface{}
+		expected any
 		wantErr  bool
 	}{
 		{
 			name:     "simple field",
-			data:     map[string]interface{}{"title": "Test Record"},
+			data:     map[string]any{"title": "Test Record"},
 			path:     "title",
 			expected: "Test Record",
 			wantErr:  false,
 		},
 		{
 			name:     "nested field",
-			data:     map[string]interface{}{"system": map[string]interface{}{"tag": "v1"}},
+			data:     map[string]any{"system": map[string]any{"tag": "v1"}},
 			path:     "system.tag",
 			expected: "v1",
 			wantErr:  false,
 		},
 		{
 			name:    "missing field",
-			data:    map[string]interface{}{"title": "Test"},
+			data:    map[string]any{"title": "Test"},
 			path:    "missing",
 			wantErr: true,
 		},
 		{
 			name:     "empty path",
-			data:     map[string]interface{}{"title": "Test"},
+			data:     map[string]any{"title": "Test"},
 			path:     "",
-			expected: map[string]interface{}{"title": "Test"},
+			expected: map[string]any{"title": "Test"},
 			wantErr:  false,
 		},
 	}
@@ -66,28 +66,28 @@ func TestExtractNestedField(t *testing.T) {
 }
 
 func TestFilterArray(t *testing.T) {
-	items := []interface{}{
-		map[string]interface{}{"name": "Alice", "age": 30},
-		map[string]interface{}{"name": "Bob", "age": 25},
-		map[string]interface{}{"name": "Charlie", "age": 30},
+	items := []any{
+		map[string]any{"name": "Alice", "age": 30},
+		map[string]any{"name": "Bob", "age": 25},
+		map[string]any{"name": "Charlie", "age": 30},
 	}
 
 	tests := []struct {
 		name     string
 		filters  []string
-		expected []interface{}
+		expected []any
 		wantErr  bool
 	}{
 		{
 			name:     "filter by name",
 			filters:  []string{"name=Bob"},
-			expected: []interface{}{items[1]},
+			expected: []any{items[1]},
 			wantErr:  false,
 		},
 		{
 			name:     "filter by age",
 			filters:  []string{"age=30"},
-			expected: []interface{}{items[0], items[2]},
+			expected: []any{items[0], items[2]},
 			wantErr:  false,
 		},
 		{
@@ -127,7 +127,7 @@ func TestFilterArray(t *testing.T) {
 }
 
 func TestFormatOutput(t *testing.T) {
-	data := map[string]interface{}{"name": "Test", "value": 123}
+	data := map[string]any{"name": "Test", "value": 123}
 
 	tests := []struct {
 		name    string

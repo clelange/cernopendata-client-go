@@ -74,12 +74,12 @@ func (v *Verifier) VerifyLocalFiles(directory string) (*VerificationStats, error
 	return stats, nil
 }
 
-func (v *Verifier) VerifyFiles(directory string, expectedFiles []interface{}) (*VerificationStats, error) {
+func (v *Verifier) VerifyFiles(directory string, expectedFiles []any) (*VerificationStats, error) {
 	stats := &VerificationStats{}
 	stats.TotalFiles = len(expectedFiles)
 
 	for _, file := range expectedFiles {
-		fileMap, ok := file.(map[string]interface{})
+		fileMap, ok := file.(map[string]any)
 		if !ok {
 			stats.MissingFiles++
 			continue

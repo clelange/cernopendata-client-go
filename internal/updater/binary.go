@@ -99,7 +99,7 @@ func FetchChecksums(url string) (map[string]string, error) {
 	}
 
 	checksums := make(map[string]string)
-	for _, line := range strings.Split(string(body), "\n") {
+	for line := range strings.SplitSeq(string(body), "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue

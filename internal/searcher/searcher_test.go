@@ -38,7 +38,7 @@ func TestGetRecord(t *testing.T) {
 			recid: 3005,
 			handler: func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
-				metadata := map[string]interface{}{
+				metadata := map[string]any{
 					"recid": 3005,
 					"title": "Test Record",
 					"doi":   "10.7483/record/3005",
@@ -51,7 +51,7 @@ func TestGetRecord(t *testing.T) {
 			},
 			want: &RecordResponse{
 				ID: "3005",
-				Metadata: map[string]interface{}{
+				Metadata: map[string]any{
 					"recid": 3005,
 					"title": "Test Record",
 					"doi":   "10.7483/record/3005",
@@ -137,16 +137,16 @@ func TestGetFilesList(t *testing.T) {
 		{
 			name: "http protocol without expand",
 			record: &RecordResponse{
-				Metadata: map[string]interface{}{
+				Metadata: map[string]any{
 					"recid": 3005,
-					"files": []interface{}{
-						map[string]interface{}{
+					"files": []any{
+						map[string]any{
 							"uri":      "http://opendata.cern.ch/test.txt",
 							"size":     100,
 							"checksum": "adler32:12345678",
 						},
 					},
-					"_file_indices": []interface{}{},
+					"_file_indices": []any{},
 				},
 			},
 			protocol: "http",
@@ -156,15 +156,15 @@ func TestGetFilesList(t *testing.T) {
 		{
 			name: "root protocol without expand",
 			record: &RecordResponse{
-				Metadata: map[string]interface{}{
+				Metadata: map[string]any{
 					"recid": 3005,
-					"_file_indices": []interface{}{
-						map[string]interface{}{
+					"_file_indices": []any{
+						map[string]any{
 							"key":      "index1",
 							"size":     100,
 							"checksum": "adler32:87654321",
-							"files": []interface{}{
-								map[string]interface{}{
+							"files": []any{
+								map[string]any{
 									"uri":      "root://eospublic.cern.ch//eos/opendata/cms/inner.txt",
 									"size":     50,
 									"checksum": "adler32:11111111",
@@ -181,16 +181,16 @@ func TestGetFilesList(t *testing.T) {
 		{
 			name: "https protocol without expand",
 			record: &RecordResponse{
-				Metadata: map[string]interface{}{
+				Metadata: map[string]any{
 					"recid": 3005,
-					"files": []interface{}{
-						map[string]interface{}{
+					"files": []any{
+						map[string]any{
 							"uri":      "https://opendata.cern.ch/test.txt",
 							"size":     100,
 							"checksum": "adler32:12345678",
 						},
 					},
-					"_file_indices": []interface{}{},
+					"_file_indices": []any{},
 				},
 			},
 			protocol: "https",
@@ -200,27 +200,27 @@ func TestGetFilesList(t *testing.T) {
 		{
 			name: "expand file indices",
 			record: &RecordResponse{
-				Metadata: map[string]interface{}{
+				Metadata: map[string]any{
 					"recid": 3005,
-					"files": []interface{}{
-						map[string]interface{}{
+					"files": []any{
+						map[string]any{
 							"uri":      "http://opendata.cern.ch/test.txt",
 							"size":     100,
 							"checksum": "adler32:12345678",
 						},
 					},
-					"_file_indices": []interface{}{
-						map[string]interface{}{
+					"_file_indices": []any{
+						map[string]any{
 							"key":      "index1",
 							"size":     100,
 							"checksum": "adler32:87654321",
-							"files": []interface{}{
-								map[string]interface{}{
+							"files": []any{
+								map[string]any{
 									"uri":      "http://opendata.cern.ch/inner1.txt",
 									"size":     50,
 									"checksum": "adler32:11111111",
 								},
-								map[string]interface{}{
+								map[string]any{
 									"uri":      "http://opendata.cern.ch/inner2.txt",
 									"size":     50,
 									"checksum": "adler32:22222222",
@@ -237,16 +237,16 @@ func TestGetFilesList(t *testing.T) {
 		{
 			name: "xrootd protocol (no conversion)",
 			record: &RecordResponse{
-				Metadata: map[string]interface{}{
+				Metadata: map[string]any{
 					"recid": 3005,
-					"files": []interface{}{
-						map[string]interface{}{
+					"files": []any{
+						map[string]any{
 							"uri":      "http://opendata.cern.ch/test.txt",
 							"size":     100,
 							"checksum": "adler32:12345678",
 						},
 					},
-					"_file_indices": []interface{}{},
+					"_file_indices": []any{},
 				},
 			},
 			protocol: "xrootd",
@@ -297,7 +297,7 @@ func TestGetRecordByDOI(t *testing.T) {
 			handler: func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				if strings.Contains(r.URL.Path, "records/") {
-					metadata := map[string]interface{}{
+					metadata := map[string]any{
 						"recid": 3005,
 						"title": "Test Record",
 						"doi":   "10.7483/record/3005",
@@ -398,7 +398,7 @@ func TestGetRecordByTitle(t *testing.T) {
 			handler: func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				if strings.Contains(r.URL.Path, "records/") {
-					metadata := map[string]interface{}{
+					metadata := map[string]any{
 						"recid": 3005,
 						"title": "Test Record",
 						"doi":   "10.7483/record/3005",
@@ -582,8 +582,8 @@ func TestSearchRecords(t *testing.T) {
 					Hits: SearchHits{
 						Total: 5,
 						Hits: []SearchHit{
-							{ID: "1", Metadata: map[string]interface{}{"title": "Higgs Boson"}},
-							{ID: "2", Metadata: map[string]interface{}{"title": "Higgs Search"}},
+							{ID: "1", Metadata: map[string]any{"title": "Higgs Boson"}},
+							{ID: "2", Metadata: map[string]any{"title": "Higgs Search"}},
 						},
 					},
 				}
@@ -608,7 +608,7 @@ func TestSearchRecords(t *testing.T) {
 					Hits: SearchHits{
 						Total: 3,
 						Hits: []SearchHit{
-							{ID: "1", Metadata: map[string]interface{}{"title": "CMS Muon Data"}},
+							{ID: "1", Metadata: map[string]any{"title": "CMS Muon Data"}},
 						},
 					},
 				}
@@ -688,21 +688,21 @@ func TestGetFacets(t *testing.T) {
 			name: "successful facets fetch",
 			handler: func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
-				resp := map[string]interface{}{
-					"hits": map[string]interface{}{
+				resp := map[string]any{
+					"hits": map[string]any{
 						"total": 100,
-						"hits":  []interface{}{},
+						"hits":  []any{},
 					},
-					"aggregations": map[string]interface{}{
-						"experiment": map[string]interface{}{
-							"buckets": []interface{}{
-								map[string]interface{}{"key": "CMS", "doc_count": 50},
-								map[string]interface{}{"key": "ATLAS", "doc_count": 30},
+					"aggregations": map[string]any{
+						"experiment": map[string]any{
+							"buckets": []any{
+								map[string]any{"key": "CMS", "doc_count": 50},
+								map[string]any{"key": "ATLAS", "doc_count": 30},
 							},
 						},
-						"type": map[string]interface{}{
-							"buckets": []interface{}{
-								map[string]interface{}{"key": "Dataset", "doc_count": 80},
+						"type": map[string]any{
+							"buckets": []any{
+								map[string]any{"key": "Dataset", "doc_count": 80},
 							},
 						},
 					},
@@ -717,12 +717,12 @@ func TestGetFacets(t *testing.T) {
 			name: "empty aggregations",
 			handler: func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
-				resp := map[string]interface{}{
-					"hits": map[string]interface{}{
+				resp := map[string]any{
+					"hits": map[string]any{
 						"total": 0,
-						"hits":  []interface{}{},
+						"hits":  []any{},
 					},
-					"aggregations": map[string]interface{}{},
+					"aggregations": map[string]any{},
 				}
 				_ = json.NewEncoder(w).Encode(resp)
 			},
@@ -773,17 +773,17 @@ func TestGetFacets(t *testing.T) {
 func TestSearchRecordsWithAggregations(t *testing.T) {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		resp := map[string]interface{}{
-			"hits": map[string]interface{}{
+		resp := map[string]any{
+			"hits": map[string]any{
 				"total": 5,
-				"hits": []interface{}{
-					map[string]interface{}{"id": "1", "metadata": map[string]interface{}{"title": "Test"}},
+				"hits": []any{
+					map[string]any{"id": "1", "metadata": map[string]any{"title": "Test"}},
 				},
 			},
-			"aggregations": map[string]interface{}{
-				"experiment": map[string]interface{}{
-					"buckets": []interface{}{
-						map[string]interface{}{"key": "CMS", "doc_count": 5},
+			"aggregations": map[string]any{
+				"experiment": map[string]any{
+					"buckets": []any{
+						map[string]any{"key": "CMS", "doc_count": 5},
 					},
 				},
 			},
@@ -860,24 +860,21 @@ func TestSearchAllRecords(t *testing.T) {
 				// Calculate how many hits to return for this page
 				startIdx := (pageRequests - 1) * 50
 				remaining := tt.totalRecords - startIdx
-				hitsThisPage := remaining
-				if hitsThisPage > 50 {
-					hitsThisPage = 50
-				}
+				hitsThisPage := min(remaining, 50)
 				if hitsThisPage < 0 {
 					hitsThisPage = 0
 				}
 
-				hits := make([]interface{}, hitsThisPage)
+				hits := make([]any, hitsThisPage)
 				for i := range hits {
-					hits[i] = map[string]interface{}{
+					hits[i] = map[string]any{
 						"id":       string(rune('0' + startIdx + i)),
-						"metadata": map[string]interface{}{"title": "Record"},
+						"metadata": map[string]any{"title": "Record"},
 					}
 				}
 
-				resp := map[string]interface{}{
-					"hits": map[string]interface{}{
+				resp := map[string]any{
+					"hits": map[string]any{
 						"total": tt.totalRecords,
 						"hits":  hits,
 					},
@@ -920,11 +917,11 @@ func TestSearchAllRecordsError(t *testing.T) {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		resp := map[string]interface{}{
-			"hits": map[string]interface{}{
+		resp := map[string]any{
+			"hits": map[string]any{
 				"total": 100, // Indicates more pages needed
-				"hits": []interface{}{
-					map[string]interface{}{"id": "1"},
+				"hits": []any{
+					map[string]any{"id": "1"},
 				},
 			},
 		}
@@ -946,7 +943,7 @@ func TestGetRecidWithDOI(t *testing.T) {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if strings.Contains(r.URL.Path, "/api/records/") {
-			metadata := map[string]interface{}{
+			metadata := map[string]any{
 				"recid": 3005,
 				"title": "Test Record",
 				"doi":   "10.7483/OPENDATA.TEST",
@@ -986,7 +983,7 @@ func TestGetRecidWithTitle(t *testing.T) {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if strings.Contains(r.URL.Path, "/api/records/") {
-			metadata := map[string]interface{}{
+			metadata := map[string]any{
 				"recid": 1234,
 				"title": "My Test Title",
 			}

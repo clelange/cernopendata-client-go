@@ -102,13 +102,13 @@ func TestDownloadFilesDryRun(t *testing.T) {
 	d.dryRun = true
 	d.verbose = true
 
-	files := []interface{}{
-		map[string]interface{}{
+	files := []any{
+		map[string]any{
 			"uri":      "root://test/file1.dat",
 			"size":     float64(1000),
 			"checksum": "abc123",
 		},
-		map[string]interface{}{
+		map[string]any{
 			"uri":      "root://test/file2.dat",
 			"size":     float64(2000),
 			"checksum": "def456",
@@ -142,14 +142,14 @@ func TestDownloadFilesDryRun(t *testing.T) {
 func TestDownloadFilesInvalidEntry(t *testing.T) {
 	d := NewDownloader()
 
-	files := []interface{}{
-		map[string]interface{}{
+	files := []any{
+		map[string]any{
 			"uri":      "root://test/file1.dat",
 			"size":     float64(1000),
 			"checksum": "abc123",
 		},
 		"not a map",
-		map[string]interface{}{
+		map[string]any{
 			"uri":      "root://test/file2.dat",
 			"size":     float64(2000),
 			"checksum": "def456",

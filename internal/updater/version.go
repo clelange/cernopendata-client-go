@@ -19,10 +19,7 @@ func CompareVersions(current, latest string) int {
 	currentParts := strings.Split(current, ".")
 	latestParts := strings.Split(latest, ".")
 
-	maxLen := len(currentParts)
-	if len(latestParts) > maxLen {
-		maxLen = len(latestParts)
-	}
+	maxLen := max(len(latestParts), len(currentParts))
 
 	for i := 0; i < maxLen; i++ {
 		var currentNum, latestNum int

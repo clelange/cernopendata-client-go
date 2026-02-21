@@ -272,7 +272,7 @@ func (d *Downloader) DownloadFile(ctx context.Context, url, destPath string, res
 	}, lastErr
 }
 
-func (d *Downloader) DownloadFiles(ctx context.Context, files []interface{}, baseDir string, retry int, retrySleep int, verbose bool, dryRun bool, showProgress bool) DownloadStats {
+func (d *Downloader) DownloadFiles(ctx context.Context, files []any, baseDir string, retry int, retrySleep int, verbose bool, dryRun bool, showProgress bool) DownloadStats {
 	d.retryLimit = retry
 	d.retrySleep = retrySleep
 	d.verbose = verbose
@@ -288,7 +288,7 @@ func (d *Downloader) DownloadFiles(ctx context.Context, files []interface{}, bas
 	}
 
 	for i, file := range files {
-		fileMap, ok := file.(map[string]interface{})
+		fileMap, ok := file.(map[string]any)
 		if !ok {
 			printer.DisplayMessage(printer.Note, fmt.Sprintf("Skipping invalid file entry %d", i))
 			stats.SkippedFiles++

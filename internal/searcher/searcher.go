@@ -13,8 +13,8 @@ import (
 )
 
 type RecordResponse struct {
-	Metadata map[string]interface{} `json:"metadata"`
-	ID       string                 `json:"id"`
+	Metadata map[string]any `json:"metadata"`
+	ID       string         `json:"id"`
 }
 
 type FileInfo struct {
@@ -36,8 +36,8 @@ type Aggregation struct {
 
 // AggregationBucket represents a single facet value with its count
 type AggregationBucket struct {
-	Key      interface{} `json:"key"`
-	DocCount int         `json:"doc_count"`
+	Key      any `json:"key"`
+	DocCount int `json:"doc_count"`
 }
 
 type SearchHits struct {
@@ -46,8 +46,8 @@ type SearchHits struct {
 }
 
 type SearchHit struct {
-	ID       string                 `json:"id"`
-	Metadata map[string]interface{} `json:"metadata"`
+	ID       string         `json:"id"`
+	Metadata map[string]any `json:"metadata"`
 }
 
 type Client struct {
@@ -55,29 +55,29 @@ type Client struct {
 	client *http.Client
 }
 
-func cleanupMetadata(metadata map[string]interface{}) error {
+func cleanupMetadata(metadata map[string]any) error {
 	if metadata == nil {
 		return fmt.Errorf("metadata is nil")
 	}
 
 	delete(metadata, "_files")
 
-	if files, ok := metadata["files"].([]interface{}); ok {
+	if files, ok := metadata["files"].([]any); ok {
 		for _, file := range files {
-			if fileMap, ok := file.(map[string]interface{}); ok {
+			if fileMap, ok := file.(map[string]any); ok {
 				delete(fileMap, "bucket")
 				delete(fileMap, "version_id")
 			}
 		}
 	}
 
-	if indices, ok := metadata["_file_indices"].([]interface{}); ok {
+	if indices, ok := metadata["_file_indices"].([]any); ok {
 		for _, idx := range indices {
-			if idxMap, ok := idx.(map[string]interface{}); ok {
+			if idxMap, ok := idx.(map[string]any); ok {
 				delete(idxMap, "bucket")
-				if files, ok := idxMap["files"].([]interface{}); ok {
+				if files, ok := idxMap["files"].([]any); ok {
 					for _, file := range files {
-						if fileMap, ok := file.(map[string]interface{}); ok {
+						if fileMap, ok := file.(map[string]any); ok {
 							delete(fileMap, "bucket")
 							delete(fileMap, "version_id")
 						}
@@ -90,7 +90,7 @@ func cleanupMetadata(metadata map[string]interface{}) error {
 	return nil
 }
 
-func getMetadataFieldAsString(metadata map[string]interface{}, field string) (string, error) {
+func getMetadataFieldAsString(metadata map[string]any, field string) (string, error) {
 	value, ok := metadata[field]
 	if !ok {
 		return "", fmt.Errorf("field '%s' not found", field)
@@ -104,7 +104,7 @@ func getMetadataFieldAsString(metadata map[string]interface{}, field string) (st
 	return strValue, nil
 }
 
-func getMetadataFieldAsInt(metadata map[string]interface{}, field string) (int, error) {
+func getMetadataFieldAsInt(metadata map[string]any, field string) (int, error) {
 	value, ok := metadata[field]
 	if !ok {
 		return 0, fmt.Errorf("field '%s' not found", field)
@@ -129,7 +129,7 @@ func getMetadataFieldAsInt(metadata map[string]interface{}, field string) (int, 
 	return 0, fmt.Errorf("field '%s' is not an integer, got %T", field, value)
 }
 
-func getMetadataFieldAsInt64(metadata map[string]interface{}, field string) (int64, error) {
+func getMetadataFieldAsInt64(metadata map[string]any, field string) (int64, error) {
 	value, ok := metadata[field]
 	if !ok {
 		return 0, fmt.Errorf("field '%s' not found", field)
@@ -264,9 +264,9 @@ func (c *Client) GetFilesList(record *RecordResponse, protocol string, expand bo
 	serverRoot := config.ServerRootURI
 	serverURI := c.server
 
-	if filesArray, ok := record.Metadata["files"].([]interface{}); ok {
+	if filesArray, ok := record.Metadata["files"].([]any); ok {
 		for _, file := range filesArray {
-			fileMap, ok := file.(map[string]interface{})
+			fileMap, ok := file.(map[string]any)
 			if !ok {
 				return nil, fmt.Errorf("file entry is not a map")
 			}
@@ -293,16 +293,16 @@ func (c *Client) GetFilesList(record *RecordResponse, protocol string, expand bo
 	}
 
 	if expand {
-		if indices, ok := record.Metadata["_file_indices"].([]interface{}); ok {
+		if indices, ok := record.Metadata["_file_indices"].([]any); ok {
 			for _, index := range indices {
-				indexMap, ok := index.(map[string]interface{})
+				indexMap, ok := index.(map[string]any)
 				if !ok {
 					return nil, fmt.Errorf("index entry is not a map")
 				}
 
-				if indexFiles, ok := indexMap["files"].([]interface{}); ok {
+				if indexFiles, ok := indexMap["files"].([]any); ok {
 					for _, innerFile := range indexFiles {
-						fileMap, ok := innerFile.(map[string]interface{})
+						fileMap, ok := innerFile.(map[string]any)
 						if !ok {
 							return nil, fmt.Errorf("inner file entry is not a map")
 						}
@@ -335,9 +335,9 @@ func (c *Client) GetFilesList(record *RecordResponse, protocol string, expand bo
 			}
 		}
 	} else {
-		if indices, ok := record.Metadata["_file_indices"].([]interface{}); ok {
+		if indices, ok := record.Metadata["_file_indices"].([]any); ok {
 			for _, index := range indices {
-				indexMap, ok := index.(map[string]interface{})
+				indexMap, ok := index.(map[string]any)
 				if !ok {
 					return nil, fmt.Errorf("index entry is not a map")
 				}

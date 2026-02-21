@@ -259,7 +259,7 @@ func TestGetAssetForCurrentPlatform(t *testing.T) {
 
 func parseChecksums(data string) (map[string]string, error) {
 	checksums := make(map[string]string)
-	for _, line := range strings.Split(data, "\n") {
+	for line := range strings.SplitSeq(data, "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue

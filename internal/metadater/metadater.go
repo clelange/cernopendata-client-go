@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func ExtractNestedField(data interface{}, path string) (interface{}, error) {
+func ExtractNestedField(data any, path string) (any, error) {
 	if path == "" {
 		return data, nil
 	}
@@ -18,7 +18,7 @@ func ExtractNestedField(data interface{}, path string) (interface{}, error) {
 	for i, field := range fields {
 		val := reflect.ValueOf(current)
 		if val.Kind() == reflect.Map {
-			mapVal, ok := val.Interface().(map[string]interface{})
+			mapVal, ok := val.Interface().(map[string]any)
 			if !ok {
 				return nil, fmt.Errorf("expected map[string]interface{}, got %T", val.Interface())
 			}
@@ -29,10 +29,10 @@ func ExtractNestedField(data interface{}, path string) (interface{}, error) {
 				}
 				// If we have more fields and the value is a slice, process it immediately
 				if val := reflect.ValueOf(v); val.Kind() == reflect.Slice && i < len(fields)-1 {
-					sliceVal := v.([]interface{})
-					var results []interface{}
+					sliceVal := v.([]any)
+					var results []any
 					for _, item := range sliceVal {
-						itemMap, ok := item.(map[string]interface{})
+						itemMap, ok := item.(map[string]any)
 						if !ok {
 							return nil, fmt.Errorf("array item is not a map")
 						}
@@ -61,18 +61,18 @@ func ExtractNestedField(data interface{}, path string) (interface{}, error) {
 	return current, nil
 }
 
-func GetNestedField(record interface{}, path string) (interface{}, error) {
+func GetNestedField(record any, path string) (any, error) {
 	if path == "" {
 		return record, nil
 	}
 
 	// Record is now a map, delegate to ExtractNestedField
-	if recordMap, ok := record.(map[string]interface{}); ok {
+	if recordMap, ok := record.(map[string]any); ok {
 		return ExtractNestedField(recordMap, path)
 	}
 
 	// Fallback: try to convert to map (backward compatibility)
-	var recordMap map[string]interface{}
+	var recordMap map[string]any
 	jsonBytes, err := json.Marshal(record)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal record: %w", err)
@@ -85,7 +85,7 @@ func GetNestedField(record interface{}, path string) (interface{}, error) {
 	return ExtractNestedField(recordMap, path)
 }
 
-func FilterArray(items []interface{}, filters []string) ([]interface{}, error) {
+func FilterArray(items []any, filters []string) ([]any, error) {
 	if len(items) == 0 {
 		return items, nil
 	}
@@ -94,7 +94,7 @@ func FilterArray(items []interface{}, filters []string) ([]interface{}, error) {
 		return items, nil
 	}
 
-	var result []interface{}
+	var result []any
 
 	filterMap := make(map[string]string)
 	for _, f := range filters {
@@ -106,7 +106,7 @@ func FilterArray(items []interface{}, filters []string) ([]interface{}, error) {
 	}
 
 	for _, item := range items {
-		itemMap, ok := item.(map[string]interface{})
+		itemMap, ok := item.(map[string]any)
 		if !ok {
 			return nil, fmt.Errorf("item is not a map")
 		}
@@ -130,7 +130,7 @@ func FilterArray(items []interface{}, filters []string) ([]interface{}, error) {
 	return result, nil
 }
 
-func FormatOutput(data interface{}, format string) (string, error) {
+func FormatOutput(data any, format string) (string, error) {
 	switch format {
 	case "json":
 		jsonBytes, err := json.MarshalIndent(data, "", "  ")

@@ -66,9 +66,9 @@ Examples:
 			os.Exit(1)
 		}
 
-		var fileList []interface{}
+		var fileList []any
 		for _, file := range files {
-			fileList = append(fileList, map[string]interface{}{
+			fileList = append(fileList, map[string]any{
 				"uri":      file.URI,
 				"size":     float64(file.Size),
 				"checksum": file.Checksum,

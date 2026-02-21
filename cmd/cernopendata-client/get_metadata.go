@@ -82,9 +82,9 @@ Examples:
 			}
 
 			if len(filters) > 0 {
-				items, isArray := metadata.([]interface{})
+				items, isArray := metadata.([]any)
 				if !isArray {
-					items = []interface{}{metadata}
+					items = []any{metadata}
 				}
 				filtered, err := metadater.FilterArray(items, filters)
 				if err != nil {
