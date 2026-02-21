@@ -99,7 +99,7 @@ Each command uses unique flag shorthands to avoid conflicts:
 
 ### Requirements
 
-- Go 1.25 or later
+- Go 1.26 or later
 - For XRootD support (optional): `go-hep.org/x/hep/xrootd` (automatically downloaded)
 
 ### Option 1: Homebrew (macOS/Linux)
